@@ -40,33 +40,32 @@
 
   <div id="bang-thong-bao">
     <div id="tieu-de">Khối Tứ Diện Đều A.BCD</div>
-    <div id="noi-dung">Hướng camera vào thẻ để mở khóa mô hình 3D</div>
+    <div id="noi-dung">Hãy hướng camera vào thẻ và xoay quanh để ngắm các mặt</div>
   </div>
 
   <a-scene 
-    mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; filterMinCF: 0.0001; filterBeta: 0.001;" 
+    mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; filterMinCF: 0.0001; filterBeta: 1000; warmupTolerance: 3; missTolerance: 15;" 
     color-space="sRGB" 
     renderer="colorManagement: true, physicallyCorrectLights" 
     vr-mode-ui="enabled: false" 
     device-orientation-permission-ui="enabled: false">
 
-    <a-light type="ambient" color="#ffffff" intensity="1.6"></a-light>
-    <a-light type="directional" color="#ffffff" intensity="1.2" position="2 4 3"></a-light>
+    <!-- Ánh sáng môi trường dịu mắt -->
+    <a-light type="ambient" color="#ffffff" intensity="1.4"></a-light>
+    <a-light type="directional" color="#ffffff" intensity="1.0" position="1 3 2"></a-light>
 
-    <!-- Camera chính có gắn cảm biến góc quay con quay hồi chuyển (gyroscope) -->
-    <a-camera position="0 0 0" look-controls="enabled: true"></a-camera>
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- Điểm neo thẻ quét -->
-    <a-entity id="target-marker" mindar-image-target="targetIndex: 0"></a-entity>
+    <!-- Gắn trực tiếp lên thẻ nhận diện mục tiêu -->
+    <a-entity id="target-marker" mindar-image-target="targetIndex: 0">
+      
+      <!-- Cụm khối tứ diện đều: Kích thước chuẩn vừa vặn thẻ -->
+      <a-entity id="khoi-tu-dien" position="0 0.1 0" scale="0.8 0.8 0.8">
+        <a-entity id="mesh-container"></a-entity>
+        <a-text value="Tu dien deu A.BCD" position="0 1.05 0" align="center" scale="0.6 0.6 0.6" color="#fbbf24"></a-text>
+      </a-entity>
 
-    <!-- KHỐI TỨ DIỆN ĐỀU KHỔ LỚN (Được đưa ra ngoài gốc tọa độ để không bị rớt hình) -->
-    <a-entity id="khoi-tu-dien" position="0 -0.2 -2.5" scale="1.8 1.8 1.8" visible="false">
-      <!-- Cụm chứa 3D -->
-      <a-entity id="mesh-container"></a-entity>
-      <!-- Nhãn tiêu đề nổi to bản -->
-      <a-text value="Tu dien deu A.BCD" position="0 1.2 0" align="center" scale="0.8 0.8 0.8" color="#fbbf24"></a-text>
     </a-entity>
-
   </a-scene>
 
   <script>
@@ -84,7 +83,7 @@
       document.getElementById('lop-kich-hoat').style.display = 'none';
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
-        const msg = new SpeechSynthesisUtterance('Đã nhận diện thành công! Bạn có thể tự do xoay điện thoại xung quanh để quan sát toàn bộ các mặt của tứ diện đều.');
+        const msg = new SpeechSynthesisUtterance('Khối tứ diện đều có bốn mặt là các tam giác đều bằng nhau.');
         msg.lang = 'vi-VN';
         if (giongNoiChuan) msg.voice = giongNoiChuan;
         msg.rate = 0.95;
@@ -92,13 +91,12 @@
       }
     }
 
-    const targetMarker = document.querySelector('#target-marker');
-    const khoiTuDien = document.querySelector('#khoi-tu-dien');
     const meshContainer = document.querySelector('#mesh-container');
     const tieuDe = document.querySelector('#tieu-de');
     const noiDung = document.querySelector('#noi-dung');
+    const targetMarker = document.querySelector('#target-marker');
 
-    // DỰNG HÌNH TỨ DIỆN ĐỀU CHUẨN XÁC
+    // DỰNG TỨ DIỆN ĐỀU CHUẨN XÁC VỚI THREE.JS
     const vA = new THREE.Vector3(0, 0.816, 0);          // Đỉnh A
     const vB = new THREE.Vector3(0, 0, 0.577);          // Đỉnh B
     const vC = new THREE.Vector3(-0.5, 0, -0.289);      // Đỉnh C
@@ -107,9 +105,13 @@
 
     const geometry = new THREE.BufferGeometry();
     const vertices = new Float32Array([
+      // Mặt đáy BCD
       vB.x, vB.y, vB.z,   vC.x, vC.y, vC.z,   vD.x, vD.y, vD.z,
+      // Mặt bên ABC
       vA.x, vA.y, vA.z,   vB.x, vB.y, vB.z,   vC.x, vC.y, vC.z,
+      // Mặt bên ACD
       vA.x, vA.y, vA.z,   vC.x, vC.y, vC.z,   vD.x, vD.y, vD.z,
+      // Mặt bên ADB
       vA.x, vA.y, vA.z,   vD.x, vD.y, vD.z,   vB.x, vB.y, vB.z
     ]);
     geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
@@ -129,13 +131,14 @@
 
     const wireframe = new THREE.LineSegments(
       new THREE.WireframeGeometry(geometry),
-      new THREE.LineBasicMaterial({ color: 0x0284c7, linewidth: 4 })
+      new THREE.LineBasicMaterial({ color: 0x0284c7, linewidth: 3 })
     );
 
+    // Đường cao AH màu đỏ nét liền
     const lineAHGeom = new THREE.BufferGeometry().setFromPoints([vA, vH]);
     const lineAH = new THREE.Line(
       lineAHGeom,
-      new THREE.LineBasicMaterial({ color: 0xef4444, linewidth: 4 })
+      new THREE.LineBasicMaterial({ color: 0xef4444, linewidth: 3 })
     );
 
     const group = new THREE.Group();
@@ -146,14 +149,14 @@
 
     const taoDiem = (pos, ten, offset) => {
       const sp = document.createElement('a-sphere');
-      sp.setAttribute('radius', '0.045');
+      sp.setAttribute('radius', '0.035');
       sp.setAttribute('color', '#dc2626');
       sp.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
       
       const txt = document.createElement('a-text');
       txt.setAttribute('value', ten);
       txt.setAttribute('position', `${pos.x + offset.x} ${pos.y + offset.y} ${pos.z + offset.z}`);
-      txt.setAttribute('scale', '0.65 0.65 0.65');
+      txt.setAttribute('scale', '0.55 0.55 0.55');
       txt.setAttribute('color', '#ffffff');
       txt.setAttribute('align', 'center');
       
@@ -161,22 +164,20 @@
       meshContainer.appendChild(txt);
     };
 
-    taoDiem(vA, 'A', {x: 0, y: 0.1, z: 0});
-    taoDiem(vB, 'B', {x: 0, y: -0.08, z: 0.08});
-    taoDiem(vC, 'C', {x: -0.08, y: -0.08, z: 0});
-    taoDiem(vD, 'D', {x: 0.08, y: -0.08, z: 0});
-    taoDiem(vH, 'H (Tam day)', {x: 0, y: -0.08, z: -0.08});
-
-    // CƠ CHẾ KHÓA MÔ HÌNH: KHI BẮT ĐƯỢC THẺ SẼ GIỮ CỐ ĐỊNH KHÔNG BAO GIỜ BỊ MẤT HÌNH
-    let daKichHoatMoHinh = false;
+    taoDiem(vA, 'A', {x: 0, y: 0.08, z: 0});
+    taoDiem(vB, 'B', {x: 0, y: -0.06, z: 0.06});
+    taoDiem(vC, 'C', {x: -0.06, y: -0.06, z: 0});
+    taoDiem(vD, 'D', {x: 0.06, y: -0.06, z: 0});
+    taoDiem(vH, 'H', {x: 0, y: -0.06, z: -0.06});
 
     targetMarker.addEventListener('targetFound', () => {
-      if (!daKichHoatMoHinh) {
-        daKichHoatMoHinh = true;
-        khoiTuDien.setAttribute('visible', 'true');
-        tieuDe.innerText = "Đã khóa mô hình 3D!";
-        noiDung.innerText = "Mô hình đã cố định, bạn có thể tự do xoay góc nhìn điện thoại";
-      }
+      tieuDe.innerText = "Đã nhận diện: Tứ Diện Đều A.BCD";
+      noiDung.innerText = "Khối hình đang hiển thị trực tiếp trên mặt thẻ";
+    });
+
+    targetMarker.addEventListener('targetLost', () => {
+      tieuDe.innerText = "Tìm thẻ...";
+      noiDung.innerText = "Hãy giữ camera hướng về phía thẻ nhận diện";
     });
   </script>
 </body>
