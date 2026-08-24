@@ -28,6 +28,15 @@
       border-radius: 30px; cursor: pointer; margin-top: 15px;
       box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4);
     }
+
+    /* Nút thiết lập lại vị trí */
+    #btn-reset {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      padding: 10px 20px; font-size: 13px; font-weight: bold;
+      background: rgba(15, 23, 42, 0.85); color: #38bdf8; border: 1px solid #38bdf8;
+      border-radius: 20px; z-index: 9999; display: none;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -39,33 +48,35 @@
   </div>
 
   <div id="bang-thong-bao">
-    <div id="tieu-de">Khối Tứ Diện Đều A.BCD</div>
-    <div id="noi-dung">Hãy hướng camera vào thẻ và xoay quanh để ngắm các mặt</div>
+    <div id="tieu-de">Đang tìm thẻ...</div>
+    <div id="noi-dung">Hướng camera vào thẻ để quét và cố định mô hình 3D</div>
   </div>
 
+  <button id="btn-reset" onclick="quetLai()">QUÉT LẠI THẺ</button>
+
   <a-scene 
-    mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; filterMinCF: 0.0001; filterBeta: 1000; warmupTolerance: 3; missTolerance: 15;" 
+    mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; filterMinCF: 0.0001; filterBeta: 1000;" 
     color-space="sRGB" 
     renderer="colorManagement: true, physicallyCorrectLights" 
     vr-mode-ui="enabled: false" 
     device-orientation-permission-ui="enabled: false">
 
-    <!-- Ánh sáng môi trường dịu mắt -->
-    <a-light type="ambient" color="#ffffff" intensity="1.4"></a-light>
+    <a-light type="ambient" color="#ffffff" intensity="1.5"></a-light>
     <a-light type="directional" color="#ffffff" intensity="1.0" position="1 3 2"></a-light>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- Gắn trực tiếp lên thẻ nhận diện mục tiêu -->
-    <a-entity id="target-marker" mindar-image-target="targetIndex: 0">
-      
-      <!-- Cụm khối tứ diện đều: Kích thước chuẩn vừa vặn thẻ -->
-      <a-entity id="khoi-tu-dien" position="0 0.1 0" scale="0.8 0.8 0.8">
-        <a-entity id="mesh-container"></a-entity>
-        <a-text value="Tu dien deu A.BCD" position="0 1.05 0" align="center" scale="0.6 0.6 0.6" color="#fbbf24"></a-text>
-      </a-entity>
+    <!-- Thẻ mục tiêu -->
+    <a-entity id="target-marker" mindar-image-target="targetIndex: 0"></a-entity>
 
+    <!-- MÔ HÌNH CỐ ĐỊNH TRONG KHÔNG GIAN -->
+    <a-entity id="cum-khong-gian" position="0 -0.1 -1.5" scale="1 1 1" visible="false">
+      <a-entity id="khoi-xoay">
+        <a-entity id="mesh-container"></a-entity>
+      </a-entity>
+      <a-text value="Tu dien deu A.BCD" position="0 0.85 0" align="center" scale="0.6 0.6 0.6" color="#fbbf24"></a-text>
     </a-entity>
+
   </a-scene>
 
   <script>
@@ -81,37 +92,36 @@
 
     function moKhoaTraiNghiem() {
       document.getElementById('lop-kich-hoat').style.display = 'none';
+      
+      // Chỉ mở luồng âm thanh ngầm (không phát ra tiếng) để xin quyền trình duyệt
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
-        const msg = new SpeechSynthesisUtterance('Khối tứ diện đều có bốn mặt là các tam giác đều bằng nhau.');
-        msg.lang = 'vi-VN';
-        if (giongNoiChuan) msg.voice = giongNoiChuan;
-        msg.rate = 0.95;
+        const msg = new SpeechSynthesisUtterance('');
         window.speechSynthesis.speak(msg);
+        layGiongDoc();
       }
     }
 
     const meshContainer = document.querySelector('#mesh-container');
+    const khoiXoay = document.querySelector('#khoi-xoay');
+    const cumKhongGian = document.querySelector('#cum-khong-gian');
+    const targetMarker = document.querySelector('#target-marker');
     const tieuDe = document.querySelector('#tieu-de');
     const noiDung = document.querySelector('#noi-dung');
-    const targetMarker = document.querySelector('#target-marker');
+    const btnReset = document.querySelector('#btn-reset');
 
-    // DỰNG TỨ DIỆN ĐỀU CHUẨN XÁC VỚI THREE.JS
-    const vA = new THREE.Vector3(0, 0.816, 0);          // Đỉnh A
-    const vB = new THREE.Vector3(0, 0, 0.577);          // Đỉnh B
-    const vC = new THREE.Vector3(-0.5, 0, -0.289);      // Đỉnh C
-    const vD = new THREE.Vector3(0.5, 0, -0.289);       // Đỉnh D
-    const vH = new THREE.Vector3(0, 0, 0);              // Trọng tâm đáy H
+    // DỰNG TỨ DIỆN ĐỀU BẰNG THREE.JS
+    const vA = new THREE.Vector3(0, 0.65, 0);
+    const vB = new THREE.Vector3(0, 0, 0.46);
+    const vC = new THREE.Vector3(-0.4, 0, -0.23);
+    const vD = new THREE.Vector3(0.4, 0, -0.23);
+    const vH = new THREE.Vector3(0, 0, 0);
 
     const geometry = new THREE.BufferGeometry();
     const vertices = new Float32Array([
-      // Mặt đáy BCD
       vB.x, vB.y, vB.z,   vC.x, vC.y, vC.z,   vD.x, vD.y, vD.z,
-      // Mặt bên ABC
       vA.x, vA.y, vA.z,   vB.x, vB.y, vB.z,   vC.x, vC.y, vC.z,
-      // Mặt bên ACD
       vA.x, vA.y, vA.z,   vC.x, vC.y, vC.z,   vD.x, vD.y, vD.z,
-      // Mặt bên ADB
       vA.x, vA.y, vA.z,   vD.x, vD.y, vD.z,   vB.x, vB.y, vB.z
     ]);
     geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
@@ -134,7 +144,6 @@
       new THREE.LineBasicMaterial({ color: 0x0284c7, linewidth: 3 })
     );
 
-    // Đường cao AH màu đỏ nét liền
     const lineAHGeom = new THREE.BufferGeometry().setFromPoints([vA, vH]);
     const lineAH = new THREE.Line(
       lineAHGeom,
@@ -149,14 +158,14 @@
 
     const taoDiem = (pos, ten, offset) => {
       const sp = document.createElement('a-sphere');
-      sp.setAttribute('radius', '0.035');
+      sp.setAttribute('radius', '0.03');
       sp.setAttribute('color', '#dc2626');
       sp.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
       
       const txt = document.createElement('a-text');
       txt.setAttribute('value', ten);
       txt.setAttribute('position', `${pos.x + offset.x} ${pos.y + offset.y} ${pos.z + offset.z}`);
-      txt.setAttribute('scale', '0.55 0.55 0.55');
+      txt.setAttribute('scale', '0.45 0.45 0.45');
       txt.setAttribute('color', '#ffffff');
       txt.setAttribute('align', 'center');
       
@@ -164,20 +173,76 @@
       meshContainer.appendChild(txt);
     };
 
-    taoDiem(vA, 'A', {x: 0, y: 0.08, z: 0});
-    taoDiem(vB, 'B', {x: 0, y: -0.06, z: 0.06});
-    taoDiem(vC, 'C', {x: -0.06, y: -0.06, z: 0});
-    taoDiem(vD, 'D', {x: 0.06, y: -0.06, z: 0});
-    taoDiem(vH, 'H', {x: 0, y: -0.06, z: -0.06});
+    taoDiem(vA, 'A', {x: 0, y: 0.07, z: 0});
+    taoDiem(vB, 'B', {x: 0, y: -0.05, z: 0.05});
+    taoDiem(vC, 'C', {x: -0.05, y: -0.05, z: 0});
+    taoDiem(vD, 'D', {x: 0.05, y: -0.05, z: 0});
+    taoDiem(vH, 'H', {x: 0, y: -0.05, z: -0.05});
+
+    // CƠ CHẾ BẮT DẤU KHÔNG MẤT HÌNH & PHÁT ÂM THANH KHI QUÉT TRÚNG
+    let daKhoaHinh = false;
 
     targetMarker.addEventListener('targetFound', () => {
-      tieuDe.innerText = "Đã nhận diện: Tứ Diện Đều A.BCD";
-      noiDung.innerText = "Khối hình đang hiển thị trực tiếp trên mặt thẻ";
+      if (!daKhoaHinh) {
+        daKhoaHinh = true;
+        cumKhongGian.setAttribute('visible', 'true');
+        btnReset.style.display = 'block';
+        tieuDe.innerText = "Đã khóa mô hình 3D!";
+        noiDung.innerText = "Dùng ngón tay vuốt màn hình để xoay tứ diện đều 360 độ";
+
+        // Phát giọng nói SAU KHI nhận diện thẻ thành công
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const msg = new SpeechSynthesisUtterance('Đã nhận diện thành công khối tứ diện đều. Khối tứ diện đều có bốn mặt là các tam giác đều bằng nhau. Bạn có thể dùng ngón tay vuốt trên màn hình để xoay và quan sát các mặt.');
+          msg.lang = 'vi-VN';
+          if (giongNoiChuan) msg.voice = giongNoiChuan;
+          msg.rate = 0.95;
+          window.speechSynthesis.speak(msg);
+        }
+      }
     });
 
-    targetMarker.addEventListener('targetLost', () => {
-      tieuDe.innerText = "Tìm thẻ...";
-      noiDung.innerText = "Hãy giữ camera hướng về phía thẻ nhận diện";
+    function quetLai() {
+      daKhoaHinh = false;
+      cumKhongGian.setAttribute('visible', 'false');
+      btnReset.style.display = 'none';
+      tieuDe.innerText = "Đang tìm thẻ...";
+      noiDung.innerText = "Hướng camera vào thẻ để cố định mô hình 3D";
+      window.speechSynthesis.cancel(); // Ngắt giọng nói nếu đang đọc dở
+    }
+
+    // ĐIỀU KHIỂN XOAY MÔ HÌNH BẰNG CẢM ỨNG VUỐT MÀN HÌNH
+    let isTouching = false;
+    let previousTouchX = 0;
+    let previousTouchY = 0;
+    let rotX = 0;
+    let rotY = 0;
+
+    window.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        isTouching = true;
+        previousTouchX = e.touches[0].clientX;
+        previousTouchY = e.touches[0].clientY;
+      }
+    });
+
+    window.addEventListener('touchmove', (e) => {
+      if (isTouching && e.touches.length === 1 && daKhoaHinh) {
+        const deltaX = e.touches[0].clientX - previousTouchX;
+        const deltaY = e.touches[0].clientY - previousTouchY;
+
+        rotY += deltaX * 0.6;
+        rotX += deltaY * 0.6;
+
+        khoiXoay.setAttribute('rotation', `${rotX} ${rotY} 0`);
+
+        previousTouchX = e.touches[0].clientX;
+        previousTouchY = e.touches[0].clientY;
+      }
+    });
+
+    window.addEventListener('touchend', () => {
+      isTouching = false;
     });
   </script>
 </body>
