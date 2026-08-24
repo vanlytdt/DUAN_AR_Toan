@@ -3,22 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR Phòng Học Hình Học Không Gian 12</title>
+  <title>AR Phòng Học Hình Học Không Gian THPT</title>
   <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
   <style>
     body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: #0f172a; font-family: sans-serif; }
     model-viewer { width: 100%; height: 100%; background-color: #0f172a; }
     
-    /* Menu cuộn ngang chọn các khối hình chuẩn danh pháp */
     #menu-chon {
       position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
-      display: flex; gap: 8px; z-index: 100; width: 95%; max-width: 720px;
-      overflow-x: auto; padding: 6px; background: rgba(15, 23, 42, 0.9);
+      display: flex; gap: 8px; z-index: 100; width: 95%; max-width: 960px;
+      overflow-x: auto; padding: 8px; background: rgba(15, 23, 42, 0.92);
       border-radius: 25px; border: 1px solid rgba(255,255,255,0.15);
       box-shadow: 0 4px 20px rgba(0,0,0,0.5);
       -webkit-overflow-scrolling: touch;
     }
-    #menu-chon::-webkit-scrollbar { display: none; }
+    #menu-chon::-webkit-scrollbar { height: 4px; }
+    #menu-chon::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
     
     .btn-hinh {
       padding: 8px 14px; font-size: 13px; font-weight: bold; color: #94a3b8;
@@ -37,18 +37,23 @@
 </head>
 <body>
 
-  <!-- Menu chuẩn hóa tên gọi 10 khối hình không gian -->
   <div id="menu-chon">
-    <button class="btn-hinh active" onclick="chonMoHinh('tudien', this)">Khối tứ diện đều</button>
-    <button class="btn-hinh" onclick="chonMoHinh('choptugiac', this)">Khối chóp tứ giác đều</button>
-    <button class="btn-hinh" onclick="chonMoHinh('langtrutamgiac', this)">Khối lăng trụ tam giác</button>
-    <button class="btn-hinh" onclick="chonMoHinh('lapphuong', this)">Khối lập phương</button>
-    <button class="btn-hinh" onclick="chonMoHinh('batdien', this)">Khối bát diện đều</button>
-    <button class="btn-hinh" onclick="chonMoHinh('muoihimat', this)">Khối mười hai mặt đều</button>
+    <button class="btn-hinh active" onclick="chonMoHinh('tudien', this)">Tứ diện đều {3;3}</button>
+    <button class="btn-hinh" onclick="chonMoHinh('choptamgiac_sa', this)">Chóp S.ABC (SA ⊥ đáy)</button>
+    <button class="btn-hinh" onclick="chonMoHinh('choptugiac', this)">Chóp tứ giác đều</button>
+    <button class="btn-hinh" onclick="chonMoHinh('chopcut', this)">Chóp cụt tứ giác đều</button>
+    <button class="btn-hinh" onclick="chonMoHinh('langtrutamgiac', this)">Lăng trụ tam giác</button>
+    <button class="btn-hinh" onclick="chonMoHinh('hopchunhat', this)">Hình hộp chữ nhật</button>
+    <button class="btn-hinh" onclick="chonMoHinh('langtrutugiac', this)">Lăng trụ tứ giác đều</button>
+    <button class="btn-hinh" onclick="chonMoHinh('lapphuong', this)">Lập phương {4;3}</button>
+    <button class="btn-hinh" onclick="chonMoHinh('batdien', this)">Bát diện đều {3;4}</button>
+    <button class="btn-hinh" onclick="chonMoHinh('muoihimat', this)">12 mặt đều {5;3}</button>
+    <button class="btn-hinh" onclick="chonMoHinh('haimuoimat', this)">20 mặt đều {3;5}</button>
     <button class="btn-hinh" onclick="chonMoHinh('non', this)">Khối nón</button>
     <button class="btn-hinh" onclick="chonMoHinh('tru', this)">Khối trụ</button>
     <button class="btn-hinh" onclick="chonMoHinh('noncut', this)">Khối nón cụt</button>
     <button class="btn-hinh" onclick="chonMoHinh('matcau', this)">Mặt cầu</button>
+    <button class="btn-hinh" onclick="chonMoHinh('chomcau', this)">Chỏm cầu</button>
   </div>
 
   <model-viewer 
@@ -74,12 +79,31 @@
     const viewer = document.getElementById('viewer');
     const cacMoHinh = {};
 
+    // Bảng 20 màu riêng biệt cho từng mặt
     const bangMau = [
-      0xf87171, 0x60a5fa, 0x4ade80, 0xfacc15, 0xfb923c, 0xc084fc,
-      0x2dd4bf, 0xf472b6, 0xa78bfa, 0x38bdf8, 0xfb7185, 0xa3e635
+      0xf87171, // 0: Đỏ san hô
+      0x60a5fa, // 1: Xanh dương
+      0x4ade80, // 2: Xanh lá
+      0xfacc15, // 3: Vàng tươi
+      0xfb923c, // 4: Cam
+      0xc084fc, // 5: Tím nhạt
+      0x2dd4bf, // 6: Ngọc lam
+      0xf472b6, // 7: Hồng sen
+      0xa78bfa, // 8: Tím violet
+      0x38bdf8, // 9: Xanh da trời
+      0xfb7185, // 10: Đỏ hồng
+      0xa3e635, // 11: Xanh nõn chuối
+      0xe879f9, // 12: Hồng tím
+      0x34d399, // 13: Xanh lục bảo
+      0xfde047, // 14: Vàng chanh
+      0x818cf8, // 15: Chàm indigo
+      0xf43f5e, // 16: Đỏ ruby
+      0x10b981, // 17: Xanh ngọc sẫm
+      0x06b6d4, // 18: Cyan
+      0xd946ef  // 19: Tím magenta
     ];
 
-    const taoVatLieu = (hexColor, opac = 0.72) => new THREE.MeshStandardMaterial({
+    const taoVatLieu = (hexColor, opac = 0.76) => new THREE.MeshStandardMaterial({
       color: hexColor,
       opacity: opac,
       transparent: true,
@@ -93,7 +117,7 @@
     const matDuongCao = new THREE.LineBasicMaterial({ color: 0xef4444, linewidth: 3 });
 
     function taoDiem(scene, pos) {
-      const sp = new THREE.Mesh(new THREE.SphereGeometry(0.035, 16, 16), matDiem);
+      const sp = new THREE.Mesh(new THREE.SphereGeometry(0.032, 16, 16), matDiem);
       sp.position.copy(pos);
       scene.add(sp);
     }
@@ -129,110 +153,133 @@
     }
 
     function khoiTaoTatCaHinh() {
-      // 1. KHỐI TỨ DIỆN ĐỀU
+      // 1. TỨ DIỆN ĐỀU (4 mặt 4 màu)
       const scTuDien = new THREE.Scene();
       const vA = new THREE.Vector3(0, 0.816, 0), vB = new THREE.Vector3(0, 0, 0.577), vC = new THREE.Vector3(-0.5, 0, -0.289), vD = new THREE.Vector3(0.5, 0, -0.289), vH = new THREE.Vector3(0, 0, 0);
-      scTuDien.add(taoMatTamGiac(vB, vC, vD, taoVatLieu(bangMau[3])));
+      scTuDien.add(taoMatTamGiac(vB, vC, vD, taoVatLieu(bangMau[0])));
       scTuDien.add(taoMatTamGiac(vA, vB, vC, taoVatLieu(bangMau[1])));
       scTuDien.add(taoMatTamGiac(vA, vC, vD, taoVatLieu(bangMau[2])));
-      scTuDien.add(taoMatTamGiac(vA, vD, vB, taoVatLieu(bangMau[0])));
-      const geomTD = new THREE.BufferGeometry();
-      geomTD.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
-        vB.x, vB.y, vB.z,  vC.x, vC.y, vC.z,  vD.x, vD.y, vD.z,
-        vA.x, vA.y, vA.z,  vB.x, vB.y, vB.z,  vC.x, vC.y, vC.z,
-        vA.x, vA.y, vA.z,  vC.x, vC.y, vC.z,  vD.x, vD.y, vD.z,
-        vA.x, vA.y, vA.z,  vD.x, vD.y, vD.z,  vB.x, vB.y, vB.z
-      ]), 3));
-      scTuDien.add(new THREE.LineSegments(new THREE.WireframeGeometry(geomTD), matVien));
+      scTuDien.add(taoMatTamGiac(vA, vD, vB, taoVatLieu(bangMau[3])));
+      const gTD = new THREE.BufferGeometry().setFromPoints([vB, vC, vD, vA, vB, vD, vC, vA]);
+      scTuDien.add(new THREE.LineSegments(new THREE.WireframeGeometry(gTD), matVien));
       scTuDien.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([vA, vH]), matDuongCao));
       [vA, vB, vC, vD].forEach(p => taoDiem(scTuDien, p));
 
-      // 2. KHỐI CHÓP TỨ GIÁC ĐỀU
+      // 2. CHÓP S.ABC (SA ⊥ ĐÁY) (4 mặt 4 màu)
+      const scChopSA = new THREE.Scene();
+      const ptA = new THREE.Vector3(-0.35, 0, -0.3), ptB = new THREE.Vector3(0.45, 0, -0.3), ptC = new THREE.Vector3(-0.1, 0, 0.4), ptS = new THREE.Vector3(-0.35, 0.8, -0.3);
+      scChopSA.add(taoMatTamGiac(ptA, ptB, ptC, taoVatLieu(bangMau[4])));
+      scChopSA.add(taoMatTamGiac(ptS, ptA, ptB, taoVatLieu(bangMau[5])));
+      scChopSA.add(taoMatTamGiac(ptS, ptB, ptC, taoVatLieu(bangMau[6])));
+      scChopSA.add(taoMatTamGiac(ptS, ptC, ptA, taoVatLieu(bangMau[7])));
+      const gChopSA = new THREE.BufferGeometry().setFromPoints([ptA, ptB, ptC, ptA, ptS, ptB, ptS, ptC]);
+      scChopSA.add(new THREE.LineSegments(new THREE.WireframeGeometry(gChopSA), matVien));
+      scChopSA.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([ptS, ptA]), matDuongCao));
+      [ptS, ptA, ptB, ptC].forEach(p => taoDiem(scChopSA, p));
+
+      // 3. CHÓP TỨ GIÁC ĐỀU (5 mặt 5 màu)
       const scChop = new THREE.Scene();
       const vS = new THREE.Vector3(0, 0.85, 0), vA2 = new THREE.Vector3(-0.4, 0, 0.4), vB2 = new THREE.Vector3(0.4, 0, 0.4), vC2 = new THREE.Vector3(0.4, 0, -0.4), vD2 = new THREE.Vector3(-0.4, 0, -0.4), vO = new THREE.Vector3(0, 0, 0);
-      scChop.add(taoMatTuGiac(vA2, vB2, vC2, vD2, taoVatLieu(bangMau[3])));
+      scChop.add(taoMatTuGiac(vA2, vB2, vC2, vD2, taoVatLieu(bangMau[0])));
       scChop.add(taoMatTamGiac(vS, vA2, vB2, taoVatLieu(bangMau[1])));
       scChop.add(taoMatTamGiac(vS, vB2, vC2, taoVatLieu(bangMau[2])));
-      scChop.add(taoMatTamGiac(vS, vC2, vD2, taoVatLieu(bangMau[7])));
+      scChop.add(taoMatTamGiac(vS, vC2, vD2, taoVatLieu(bangMau[3])));
       scChop.add(taoMatTamGiac(vS, vD2, vA2, taoVatLieu(bangMau[4])));
-      const geomChop = new THREE.BufferGeometry();
-      geomChop.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
-        vA2.x, vA2.y, vA2.z,  vB2.x, vB2.y, vB2.z,  vC2.x, vC2.y, vC2.z,
-        vA2.x, vA2.y, vA2.z,  vC2.x, vC2.y, vC2.z,  vD2.x, vD2.y, vD2.z,
-        vS.x, vS.y, vS.z,  vA2.x, vA2.y, vA2.z,  vB2.x, vB2.y, vB2.z,
-        vS.x, vS.y, vS.z,  vB2.x, vB2.y, vB2.z,  vC2.x, vC2.y, vC2.z,
-        vS.x, vS.y, vS.z,  vC2.x, vC2.y, vC2.z,  vD2.x, vD2.y, vD2.z,
-        vS.x, vS.y, vS.z,  vD2.x, vD2.y, vD2.z,  vA2.x, vA2.y, vA2.z
-      ]), 3));
-      scChop.add(new THREE.LineSegments(new THREE.WireframeGeometry(geomChop), matVien));
+      const gChop = new THREE.BufferGeometry().setFromPoints([vA2, vB2, vC2, vD2, vA2, vS, vB2, vS, vC2, vS, vD2]);
+      scChop.add(new THREE.LineSegments(new THREE.WireframeGeometry(gChop), matVien));
       scChop.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([vS, vO]), matDuongCao));
       [vS, vA2, vB2, vC2, vD2].forEach(p => taoDiem(scChop, p));
 
-      // 3. KHỐI LĂNG TRỤ TAM GIÁC
+      // 4. CHÓP CỤT TỨ GIÁC ĐỀU (6 mặt 6 màu)
+      const scChopCut = new THREE.Scene();
+      const r1 = 0.42, r2 = 0.22, hCC = 0.7;
+      const b1 = new THREE.Vector3(-r1, 0, r1), b2 = new THREE.Vector3(r1, 0, r1), b3 = new THREE.Vector3(r1, 0, -r1), b4 = new THREE.Vector3(-r1, 0, -r1);
+      const t1 = new THREE.Vector3(-r2, hCC, r2), t2 = new THREE.Vector3(r2, hCC, r2), t3 = new THREE.Vector3(r2, hCC, -r2), t4 = new THREE.Vector3(-r2, hCC, -r2);
+      scChopCut.add(taoMatTuGiac(b1, b2, b3, b4, taoVatLieu(bangMau[5])));
+      scChopCut.add(taoMatTuGiac(t1, t2, t3, t4, taoVatLieu(bangMau[6])));
+      scChopCut.add(taoMatTuGiac(b1, b2, t2, t1, taoVatLieu(bangMau[7])));
+      scChopCut.add(taoMatTuGiac(b2, b3, t3, t2, taoVatLieu(bangMau[8])));
+      scChopCut.add(taoMatTuGiac(b3, b4, t4, t3, taoVatLieu(bangMau[9])));
+      scChopCut.add(taoMatTuGiac(b4, b1, t1, t4, taoVatLieu(bangMau[10])));
+      const gCC = new THREE.BufferGeometry().setFromPoints([b1,b2,b3,b4,b1,t1,t2,t3,t4,t1, b2,t2, b3,t3, b4,t4]);
+      scChopCut.add(new THREE.LineSegments(new THREE.WireframeGeometry(gCC), matVien));
+      scChopCut.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, hCC, 0), new THREE.Vector3(0, 0, 0)]), matDuongCao));
+      [b1,b2,b3,b4,t1,t2,t3,t4].forEach(p => taoDiem(scChopCut, p));
+
+      // 5. LĂNG TRỤ TAM GIÁC (5 mặt 5 màu)
       const scLT3 = new THREE.Scene();
       const pA = new THREE.Vector3(-0.35, 0, 0.35), pB = new THREE.Vector3(0.35, 0, 0.35), pC = new THREE.Vector3(0, 0, -0.4);
       const hLT = 0.75;
       const pA1 = new THREE.Vector3(-0.35, hLT, 0.35), pB1 = new THREE.Vector3(0.35, hLT, 0.35), pC1 = new THREE.Vector3(0, hLT, -0.4);
-      scLT3.add(taoMatTamGiac(pA, pB, pC, taoVatLieu(bangMau[3])));
-      scLT3.add(taoMatTamGiac(pA1, pB1, pC1, taoVatLieu(bangMau[11])));
-      scLT3.add(taoMatTuGiac(pA, pB, pB1, pA1, taoVatLieu(bangMau[1])));
-      scLT3.add(taoMatTuGiac(pB, pC, pC1, pB1, taoVatLieu(bangMau[2])));
-      scLT3.add(taoMatTuGiac(pC, pA, pA1, pC1, taoVatLieu(bangMau[7])));
-      const geomLT3 = new THREE.BufferGeometry();
-      geomLT3.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
-        pA.x, pA.y, pA.z,  pB.x, pB.y, pB.z,  pC.x, pC.y, pC.z,
-        pA1.x, pA1.y, pA1.z,  pB1.x, pB1.y, pB1.z,  pC1.x, pC1.y, pC1.z,
-        pA.x, pA.y, pA.z,  pB.x, pB.y, pB.z,  pB1.x, pB1.y, pB1.z,
-        pA.x, pA.y, pA.z,  pB1.x, pB1.y, pB1.z,  pA1.x, pA1.y, pA1.z,
-        pB.x, pB.y, pB.z,  pC.x, pC.y, pC.z,  pC1.x, pC1.y, pC1.z,
-        pB.x, pB.y, pB.z,  pC1.x, pC1.y, pC1.z,  pB1.x, pB1.y, pB1.z,
-        pC.x, pC.y, pC.z,  pA.x, pA.y, pA.z,  pA1.x, pA1.y, pA1.z,
-        pC.x, pC.y, pC.z,  pA1.x, pA1.y, pA1.z,  pC1.x, pC1.y, pC1.z
-      ]), 3));
-      scLT3.add(new THREE.LineSegments(new THREE.WireframeGeometry(geomLT3), matVien));
+      scLT3.add(taoMatTamGiac(pA, pB, pC, taoVatLieu(bangMau[11])));
+      scLT3.add(taoMatTamGiac(pA1, pB1, pC1, taoVatLieu(bangMau[12])));
+      scLT3.add(taoMatTuGiac(pA, pB, pB1, pA1, taoVatLieu(bangMau[13])));
+      scLT3.add(taoMatTuGiac(pB, pC, pC1, pB1, taoVatLieu(bangMau[14])));
+      scLT3.add(taoMatTuGiac(pC, pA, pA1, pC1, taoVatLieu(bangMau[15])));
+      const gLT3 = new THREE.BufferGeometry().setFromPoints([pA,pB,pC,pA, pA1,pB1,pC1,pA1, pB,pB1, pC,pC1]);
+      scLT3.add(new THREE.LineSegments(new THREE.WireframeGeometry(gLT3), matVien));
       [pA, pB, pC, pA1, pB1, pC1].forEach(p => taoDiem(scLT3, p));
 
-      // 4. KHỐI LẬP PHƯƠNG
-      const scLapPhuong = new THREE.Scene();
-      const materialsLapPhuong = [
-        taoVatLieu(bangMau[0]), taoVatLieu(bangMau[1]),
-        taoVatLieu(bangMau[2]), taoVatLieu(bangMau[3]),
-        taoVatLieu(bangMau[4]), taoVatLieu(bangMau[5])
-      ];
-      const boxGeom = new THREE.BoxGeometry(0.7, 0.7, 0.7);
-      boxGeom.translate(0, 0.35, 0);
-      scLapPhuong.add(new THREE.Mesh(boxGeom, materialsLapPhuong));
-      scLapPhuong.add(new THREE.LineSegments(new THREE.WireframeGeometry(boxGeom), matVien));
-      const half = 0.35;
-      for (let x of [-half, half]) {
-        for (let y of [0, 0.7]) {
-          for (let z of [-half, half]) {
-            taoDiem(scLapPhuong, new THREE.Vector3(x, y, z));
-          }
+      // 6. HÌNH HỘP CHỮ NHẬT (6 mặt 6 màu)
+      const scHCN = new THREE.Scene();
+      const matsHCN = [bangMau[0], bangMau[1], bangMau[2], bangMau[3], bangMau[4], bangMau[5]].map(c => taoVatLieu(c));
+      const boxHCNGeom = new THREE.BoxGeometry(0.7, 0.45, 0.5);
+      boxHCNGeom.translate(0, 0.225, 0);
+      scHCN.add(new THREE.Mesh(boxHCNGeom, matsHCN));
+      scHCN.add(new THREE.LineSegments(new THREE.WireframeGeometry(boxHCNGeom), matVien));
+      for (let x of [-0.35, 0.35]) {
+        for (let y of [0, 0.45]) {
+          for (let z of [-0.25, 0.25]) taoDiem(scHCN, new THREE.Vector3(x, y, z));
         }
       }
 
-      // 5. KHỐI BÁT DIỆN ĐỀU
+      // 7. LĂNG TRỤ TỨ GIÁC ĐỀU (6 mặt 6 màu)
+      const scLTTG = new THREE.Scene();
+      const matsLTTG = [bangMau[6], bangMau[7], bangMau[8], bangMau[9], bangMau[10], bangMau[11]].map(c => taoVatLieu(c));
+      const lttgGeom = new THREE.BoxGeometry(0.48, 0.8, 0.48);
+      lttgGeom.translate(0, 0.4, 0);
+      scLTTG.add(new THREE.Mesh(lttgGeom, matsLTTG));
+      scLTTG.add(new THREE.LineSegments(new THREE.WireframeGeometry(lttgGeom), matVien));
+      for (let x of [-0.24, 0.24]) {
+        for (let y of [0, 0.8]) {
+          for (let z of [-0.24, 0.24]) taoDiem(scLTTG, new THREE.Vector3(x, y, z));
+        }
+      }
+
+      // 8. LẬP PHƯƠNG (6 mặt 6 màu)
+      const scLapPhuong = new THREE.Scene();
+      const matsLP = [bangMau[12], bangMau[13], bangMau[14], bangMau[15], bangMau[16], bangMau[17]].map(c => taoVatLieu(c));
+      const boxGeom = new THREE.BoxGeometry(0.65, 0.65, 0.65);
+      boxGeom.translate(0, 0.325, 0);
+      scLapPhuong.add(new THREE.Mesh(boxGeom, matsLP));
+      scLapPhuong.add(new THREE.LineSegments(new THREE.WireframeGeometry(boxGeom), matVien));
+      for (let x of [-0.325, 0.325]) {
+        for (let y of [0, 0.65]) {
+          for (let z of [-0.325, 0.325]) taoDiem(scLapPhuong, new THREE.Vector3(x, y, z));
+        }
+      }
+
+      // 9. BÁT DIỆN ĐỀU (8 mặt 8 màu)
       const scBatDien = new THREE.Scene();
-      const rOct = 0.48;
-      const oTop = new THREE.Vector3(0, rOct + 0.48, 0), oBot = new THREE.Vector3(0, -rOct + 0.48, 0);
-      const o1 = new THREE.Vector3(rOct, 0.48, 0), o2 = new THREE.Vector3(0, 0.48, rOct), o3 = new THREE.Vector3(-rOct, 0.48, 0), o4 = new THREE.Vector3(0, 0.48, -rOct);
+      const rOct = 0.46;
+      const oTop = new THREE.Vector3(0, rOct + 0.46, 0), oBot = new THREE.Vector3(0, -rOct + 0.46, 0);
+      const o1 = new THREE.Vector3(rOct, 0.46, 0), o2 = new THREE.Vector3(0, 0.46, rOct), o3 = new THREE.Vector3(-rOct, 0.46, 0), o4 = new THREE.Vector3(0, 0.46, -rOct);
       const matBD = [
         [oTop, o1, o2], [oTop, o2, o3], [oTop, o3, o4], [oTop, o4, o1],
         [oBot, o2, o1], [oBot, o3, o2], [oBot, o4, o3], [oBot, o1, o4]
       ];
       matBD.forEach((pts, i) => {
-        scBatDien.add(taoMatTamGiac(pts[0], pts[1], pts[2], taoVatLieu(bangMau[i % 8])));
+        scBatDien.add(taoMatTamGiac(pts[0], pts[1], pts[2], taoVatLieu(bangMau[i])));
       });
       const octGeom = new THREE.OctahedronGeometry(rOct);
-      octGeom.translate(0, 0.48, 0);
+      octGeom.translate(0, 0.46, 0);
       scBatDien.add(new THREE.LineSegments(new THREE.WireframeGeometry(octGeom), matVien));
       [oTop, oBot, o1, o2, o3, o4].forEach(p => taoDiem(scBatDien, p));
 
-      // 6. KHỐI MƯỜI HAI MẶT ĐỀU
+      // 10. 12 MẶT ĐỀU (12 mặt 12 màu)
       const sc12Mat = new THREE.Scene();
       const phi = (1 + Math.sqrt(5)) / 2;
-      const a = 0.28, b = a / phi, c = a * phi;
+      const a = 0.26, b = a / phi, c = a * phi;
       const vDodeca = [
         new THREE.Vector3(-a, -a, -a), new THREE.Vector3(-a, -a, a), new THREE.Vector3(-a, a, -a), new THREE.Vector3(-a, a, a),
         new THREE.Vector3(a, -a, -a), new THREE.Vector3(a, -a, a), new THREE.Vector3(a, a, -a), new THREE.Vector3(a, a, a),
@@ -240,7 +287,7 @@
         new THREE.Vector3(-b, -c, 0), new THREE.Vector3(-b, c, 0), new THREE.Vector3(b, -c, 0), new THREE.Vector3(b, c, 0),
         new THREE.Vector3(-c, 0, -b), new THREE.Vector3(-c, 0, b), new THREE.Vector3(c, 0, -b), new THREE.Vector3(c, 0, b)
       ];
-      vDodeca.forEach(p => p.y += 0.48);
+      vDodeca.forEach(p => p.y += 0.46);
       const mat12 = [
         [3, 11, 7, 15, 13], [7, 11, 9, 5, 19], [7, 19, 18, 6, 15],
         [15, 6, 10, 2, 13], [13, 2, 16, 17, 3], [3, 17, 1, 9, 11],
@@ -248,17 +295,39 @@
         [4, 14, 12, 0, 8],  [10, 8, 0, 16, 2],  [12, 1, 17, 16, 0]
       ];
       mat12.forEach((face, i) => {
-        sc12Mat.add(taoMatNguGiac(
-          vDodeca[face[0]], vDodeca[face[1]], vDodeca[face[2]], vDodeca[face[3]], vDodeca[face[4]],
-          taoVatLieu(bangMau[i % 12])
-        ));
+        sc12Mat.add(taoMatNguGiac(vDodeca[face[0]], vDodeca[face[1]], vDodeca[face[2]], vDodeca[face[3]], vDodeca[face[4]], taoVatLieu(bangMau[i])));
       });
-      const dodGeom = new THREE.DodecahedronGeometry(0.46);
-      dodGeom.translate(0, 0.48, 0);
+      const dodGeom = new THREE.DodecahedronGeometry(0.44);
+      dodGeom.translate(0, 0.46, 0);
       sc12Mat.add(new THREE.LineSegments(new THREE.WireframeGeometry(dodGeom), matVien));
       vDodeca.forEach(p => taoDiem(sc12Mat, p));
 
-      // 7. KHỐI NÓN
+      // 11. 20 MẶT ĐỀU (20 mặt tương ứng 20 màu khác nhau)
+      const sc20Mat = new THREE.Scene();
+      const rIco = 0.45;
+      const tIco = (1 + Math.sqrt(5)) / 2 * (rIco / Math.sqrt(1 + ((1 + Math.sqrt(5))/2)*((1 + Math.sqrt(5))/2)));
+      const sIco = (rIco / Math.sqrt(1 + ((1 + Math.sqrt(5))/2)*((1 + Math.sqrt(5))/2)));
+      const vIco = [
+        new THREE.Vector3(-sIco,  tIco,  0), new THREE.Vector3( sIco,  tIco,  0), new THREE.Vector3(-sIco, -tIco,  0), new THREE.Vector3( sIco, -tIco,  0),
+        new THREE.Vector3( 0, -sIco,  tIco), new THREE.Vector3( 0,  sIco,  tIco), new THREE.Vector3( 0, -sIco, -tIco), new THREE.Vector3( 0,  sIco, -tIco),
+        new THREE.Vector3( tIco,  0, -sIco), new THREE.Vector3( tIco,  0,  sIco), new THREE.Vector3(-tIco,  0, -sIco), new THREE.Vector3(-tIco,  0,  sIco)
+      ];
+      vIco.forEach(p => p.y += 0.46);
+      const faces20 = [
+        [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
+        [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+        [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
+        [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]
+      ];
+      faces20.forEach((f, i) => {
+        sc20Mat.add(taoMatTamGiac(vIco[f[0]], vIco[f[1]], vIco[f[2]], taoVatLieu(bangMau[i])));
+      });
+      const icoGeom = new THREE.IcosahedronGeometry(rIco);
+      icoGeom.translate(0, 0.46, 0);
+      sc20Mat.add(new THREE.LineSegments(new THREE.WireframeGeometry(icoGeom), matVien));
+      vIco.forEach(p => taoDiem(sc20Mat, p));
+
+      // 12. KHỐI NÓN (Mặt xung quanh & Mặt đáy 2 màu riêng biệt)
       const scNon = new THREE.Scene();
       const coneGeom = new THREE.ConeGeometry(0.45, 0.8, 32, 1, true);
       coneGeom.translate(0, 0.4, 0);
@@ -270,63 +339,77 @@
       scNon.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0.8, 0), new THREE.Vector3(0, 0, 0)]), matDuongCao));
       taoDiem(scNon, new THREE.Vector3(0, 0.8, 0));
 
-      // 8. KHỐI TRỤ
+      // 13. KHỐI TRỤ (Mặt xung quanh, Đáy dưới, Đáy trên 3 màu riêng biệt)
       const scTru = new THREE.Scene();
       const cylGeom = new THREE.CylinderGeometry(0.38, 0.38, 0.75, 32, 1, true);
       cylGeom.translate(0, 0.375, 0);
       scTru.add(new THREE.Mesh(cylGeom, taoVatLieu(bangMau[0])));
       scTru.add(new THREE.LineSegments(new THREE.WireframeGeometry(cylGeom), matVien));
-      // Đáy trên & Đáy dưới
       const dayTruDuoi = new THREE.CircleGeometry(0.38, 32);
       dayTruDuoi.rotateX(Math.PI / 2);
-      scTru.add(new THREE.Mesh(dayTruDuoi, taoVatLieu(bangMau[3])));
+      scTru.add(new THREE.Mesh(dayTruDuoi, taoVatLieu(bangMau[2])));
       const dayTruTren = new THREE.CircleGeometry(0.38, 32);
       dayTruTren.rotateX(-Math.PI / 2);
       dayTruTren.translate(0, 0.75, 0);
-      scTru.add(new THREE.Mesh(dayTruTren, taoVatLieu(bangMau[11])));
+      scTru.add(new THREE.Mesh(dayTruTren, taoVatLieu(bangMau[4])));
       scTru.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0.75, 0), new THREE.Vector3(0, 0, 0)]), matDuongCao));
 
-      // 9. KHỐI NÓN CỤT
+      // 14. KHỐI NÓN CỤT (Mặt xung quanh, Đáy dưới, Đáy trên 3 màu riêng biệt)
       const scNonCut = new THREE.Scene();
       const nCutGeom = new THREE.CylinderGeometry(0.24, 0.46, 0.7, 32, 1, true);
       nCutGeom.translate(0, 0.35, 0);
       scNonCut.add(new THREE.Mesh(nCutGeom, taoVatLieu(bangMau[6])));
       scNonCut.add(new THREE.LineSegments(new THREE.WireframeGeometry(nCutGeom), matVien));
-      // 2 đáy
       const dayNCDuoi = new THREE.CircleGeometry(0.46, 32);
       dayNCDuoi.rotateX(Math.PI / 2);
-      scNonCut.add(new THREE.Mesh(dayNCDuoi, taoVatLieu(bangMau[3])));
+      scNonCut.add(new THREE.Mesh(dayNCDuoi, taoVatLieu(bangMau[8])));
       const dayNCTren = new THREE.CircleGeometry(0.24, 32);
       dayNCTren.rotateX(-Math.PI / 2);
       dayNCTren.translate(0, 0.7, 0);
-      scNonCut.add(new THREE.Mesh(dayNCTren, taoVatLieu(bangMau[11])));
+      scNonCut.add(new THREE.Mesh(dayNCTren, taoVatLieu(bangMau[10])));
       scNonCut.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0.7, 0), new THREE.Vector3(0, 0, 0)]), matDuongCao));
 
-      // 10. MẶT CẦU
+      // 15. MẶT CẦU (Mặt cầu, vòng kinh tuyến/xích đạo phân màu)
       const scMatCau = new THREE.Scene();
       const sphGeom = new THREE.SphereGeometry(0.45, 32, 32);
       sphGeom.translate(0, 0.45, 0);
       scMatCau.add(new THREE.Mesh(sphGeom, taoVatLieu(bangMau[9], 0.6)));
       scMatCau.add(new THREE.LineSegments(new THREE.WireframeGeometry(sphGeom), matVien));
-      // Vòng xích đạo và tâm cầu O
       const ringGeom = new THREE.RingGeometry(0.445, 0.455, 64);
       ringGeom.rotateX(Math.PI / 2);
       ringGeom.translate(0, 0.45, 0);
       scMatCau.add(new THREE.Mesh(ringGeom, new THREE.MeshBasicMaterial({ color: 0xef4444, side: THREE.DoubleSide })));
       taoDiem(scMatCau, new THREE.Vector3(0, 0.45, 0));
 
-      // Đóng gói 10 mô hình vào bộ nhớ
+      // 16. CHỎM CẦU (Mặt cong chỏm & Mặt phẳng cắt 2 màu riêng biệt)
+      const scChomCau = new THREE.Scene();
+      const chomGeom = new THREE.SphereGeometry(0.45, 32, 16, 0, Math.PI * 2, 0, Math.PI / 3);
+      chomGeom.translate(0, 0.2, 0);
+      scChomCau.add(new THREE.Mesh(chomGeom, taoVatLieu(bangMau[14], 0.8)));
+      scChomCau.add(new THREE.LineSegments(new THREE.WireframeGeometry(chomGeom), matVien));
+      const dayChom = new THREE.CircleGeometry(0.45 * Math.sin(Math.PI / 3), 32);
+      dayChom.rotateX(Math.PI / 2);
+      dayChom.translate(0, 0.2 + 0.45 * Math.cos(Math.PI / 3), 0);
+      scChomCau.add(new THREE.Mesh(dayChom, taoVatLieu(bangMau[16])));
+
+      // Đóng gói danh sách
       const danhSach = [
         { id: 'tudien', scene: scTuDien },
+        { id: 'choptamgiac_sa', scene: scChopSA },
         { id: 'choptugiac', scene: scChop },
+        { id: 'chopcut', scene: scChopCut },
         { id: 'langtrutamgiac', scene: scLT3 },
+        { id: 'hopchunhat', scene: scHCN },
+        { id: 'langtrutugiac', scene: scLTTG },
         { id: 'lapphuong', scene: scLapPhuong },
         { id: 'batdien', scene: scBatDien },
         { id: 'muoihimat', scene: sc12Mat },
+        { id: 'haimuoimat', scene: sc20Mat },
         { id: 'non', scene: scNon },
         { id: 'tru', scene: scTru },
         { id: 'noncut', scene: scNonCut },
-        { id: 'matcau', scene: scMatCau }
+        { id: 'matcau', scene: scMatCau },
+        { id: 'chomcau', scene: scChomCau }
       ];
 
       danhSach.forEach(item => {
