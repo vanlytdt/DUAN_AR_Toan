@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mô Phỏng Hình Học Không Gian 3D & VR - 11 Khối Chuẩn</title>
+  <title>Mô Phỏng Hình Học Không Gian 3D & VR - 11 Khối</title>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: #0f172a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     #canvas-3d { width: 100%; height: 100%; display: block; outline: none; }
     
-    /* Menu cuộn ngang phía trên */
+    /* Menu chọn khối hình */
     #menu-chon {
       position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
       display: flex; gap: 8px; z-index: 100; width: 95%; max-width: 960px;
@@ -30,38 +30,28 @@
     .btn-hinh:hover { color: #f8fafc; background: rgba(255,255,255,0.08); }
     .btn-hinh.active { background: #38bdf8; color: #0f172a; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
 
-    /* Hướng dẫn thao tác góc dưới */
+    /* Hướng dẫn thao tác */
     #huong-dan {
-      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      position: fixed; bottom: 75px; left: 50%; transform: translateX(-50%);
       color: #94a3b8; font-size: 12px; font-weight: 500; letter-spacing: 0.5px;
-      background: rgba(15, 23, 42, 0.75); padding: 6px 16px; border-radius: 20px;
+      background: rgba(15, 23, 42, 0.8); padding: 6px 16px; border-radius: 20px;
       border: 1px solid rgba(255,255,255,0.08); pointer-events: none; z-index: 90;
       white-space: nowrap;
     }
 
-    /* Tùy chỉnh nút VRButton của Three.js nổi bật và dễ bấm */
-    #VRButton {
-      position: fixed !important;
-      bottom: 20px !important;
-      left: 50% !important;
-      transform: translateX(-50%) !important;
-      background: #fbbf24 !important;
-      color: #0f172a !important;
-      border: none !important;
-      border-radius: 30px !important;
-      padding: 12px 28px !important;
-      font-size: 14px !important;
-      font-weight: bold !important;
-      cursor: pointer !important;
-      box-shadow: 0 4px 15px rgba(251, 191, 36, 0.4) !important;
-      z-index: 100 !important;
-      text-transform: uppercase !important;
+    /* Nút kích hoạt VR */
+    #vr-btn {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: #fbbf24; color: #0f172a; border: none; border-radius: 30px;
+      padding: 12px 28px; font-size: 14px; font-weight: bold; cursor: pointer;
+      box-shadow: 0 4px 15px rgba(251, 191, 36, 0.4); z-index: 100;
+      transition: 0.2s ease;
     }
+    #vr-btn:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; box-shadow: none; }
   </style>
 </head>
 <body>
 
-  <!-- Menu chọn 11 khối hình -->
   <div id="menu-chon">
     <button class="btn-hinh active" onclick="chuyenHinh('tudien', this)">Tứ diện đều</button>
     <button class="btn-hinh" onclick="chuyenHinh('choptugiac', this)">Chóp tứ giác đều</button>
@@ -76,34 +66,32 @@
     <button class="btn-hinh" onclick="chuyenHinh('haimuoimat', this)">20 mặt đều</button>
   </div>
 
-  <div id="huong-dan">🖱️ Giữ chuột trái để xoay • Nhấn nút VR bên dưới để vào không gian thực tế ảo</div>
+  <div id="huong-dan">🖱️ Giữ chuột trái để xoay • Cuộn chuột để phóng to/thu nhỏ</div>
+  <button id="vr-btn">KHỞI ĐỘNG VR</button>
 
-  <!-- Canvas hiển thị 3D -->
   <canvas id="canvas-3d"></canvas>
 
-  <!-- Thư viện Three.js, OrbitControls & VRButton -->
+  <!-- Thư viện Three.js và OrbitControls ổn định -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/webxr/VRButton.js"></script>
 
   <script>
-    // 1. Cấu hình Scene, Camera, Renderer
+    // 1. Khởi tạo Scene, Camera, Renderer
     const canvas = document.getElementById('canvas-3d');
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0f172a);
 
     const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.set(0, 1.4, 2.3);
+    camera.position.set(0, 1.3, 2.4);
 
     const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    // KÍCH HOẠT TÍNH NĂNG VR VÀ THÊM NÚT BẤM VR
+    // Kích hoạt WebXR cho Three.js
     renderer.xr.enabled = true;
-    document.body.appendChild(VRButton.createButton(renderer));
 
-    // Điều khiển xoay chuột (trên màn hình máy tính / điện thoại)
+    // Điều khiển xoay chuột
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.target.set(0, 0.4, 0);
     controls.enableDamping = true;
@@ -111,23 +99,20 @@
     controls.autoRotate = true;
     controls.autoRotateSpeed = 1.0;
 
-    // Tạo một Group lớn để chứa toàn bộ khối hình (giúp tự động xoay cả trong môi trường VR)
+    // Nhóm chứa mô hình (hỗ trợ tự xoay đều trong cả VR)
     const mainGroup = new THREE.Group();
     scene.add(mainGroup);
 
-    // 2. Hệ thống chiếu sáng
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-    scene.add(ambientLight);
-
+    // 2. Chiếu sáng
+    scene.add(new THREE.AmbientLight(0xffffff, 0.75));
     const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.85);
     dirLight1.position.set(5, 10, 7);
     scene.add(dirLight1);
-
     const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 0.35);
     dirLight2.position.set(-5, -5, -5);
     scene.add(dirLight2);
 
-    // 3. Bảng màu 20 sắc thái cho các mặt
+    // 3. Bảng 20 màu sắc riêng biệt cho từng mặt
     const bangMau = [
       0xf87171, 0x60a5fa, 0x4ade80, 0xfacc15, 0xfb923c,
       0xc084fc, 0x2dd4bf, 0xf472b6, 0xa78bfa, 0x38bdf8,
@@ -135,7 +120,7 @@
       0x818cf8, 0xf43f5e, 0x10b981, 0x06b6d4, 0xd946ef
     ];
 
-    const taoVatLieu = (hexColor, opac = 0.8) => new THREE.MeshStandardMaterial({
+    const taoVatLieu = (hexColor, opac = 0.82) => new THREE.MeshStandardMaterial({
       color: hexColor,
       opacity: opac,
       transparent: true,
@@ -188,7 +173,7 @@
     const cacMoHinh = {};
 
     function khoiTaoMoHinh() {
-      // 1. TỨ DIỆN ĐỀU
+      // 1. Tứ diện đều (4 mặt 4 màu)
       const grTuDien = new THREE.Group();
       const vA = new THREE.Vector3(0, 0.816, 0), vB = new THREE.Vector3(0, 0, 0.577), vC = new THREE.Vector3(-0.5, 0, -0.289), vD = new THREE.Vector3(0.5, 0, -0.289), vH = new THREE.Vector3(0, 0, 0);
       grTuDien.add(taoMatTamGiac(vB, vC, vD, taoVatLieu(bangMau[0])));
@@ -201,7 +186,7 @@
       [vA, vB, vC, vD].forEach(p => taoDiem(grTuDien, p));
       cacMoHinh['tudien'] = grTuDien;
 
-      // 2. CHÓP TỨ GIÁC ĐỀU
+      // 2. Chóp tứ giác đều (5 mặt 5 màu)
       const grChop = new THREE.Group();
       const vS = new THREE.Vector3(0, 0.85, 0), vA2 = new THREE.Vector3(-0.4, 0, 0.4), vB2 = new THREE.Vector3(0.4, 0, 0.4), vC2 = new THREE.Vector3(0.4, 0, -0.4), vD2 = new THREE.Vector3(-0.4, 0, -0.4), vO = new THREE.Vector3(0, 0, 0);
       grChop.add(taoMatTuGiac(vA2, vB2, vC2, vD2, taoVatLieu(bangMau[4])));
@@ -215,7 +200,7 @@
       [vS, vA2, vB2, vC2, vD2].forEach(p => taoDiem(grChop, p));
       cacMoHinh['choptugiac'] = grChop;
 
-      // 3. LĂNG TRỤ TAM GIÁC
+      // 3. Lăng trụ tam giác (5 mặt 5 màu)
       const grLT = new THREE.Group();
       const pA = new THREE.Vector3(-0.35, 0, 0.35), pB = new THREE.Vector3(0.35, 0, 0.35), pC = new THREE.Vector3(0, 0, -0.4);
       const hLT = 0.75;
@@ -230,7 +215,7 @@
       [pA, pB, pC, pA1, pB1, pC1].forEach(p => taoDiem(grLT, p));
       cacMoHinh['langtru'] = grLT;
 
-      // 4. HÌNH TRỤ
+      // 4. Hình trụ (3 mặt 3 màu)
       const grTru = new THREE.Group();
       const cylGeom = new THREE.CylinderGeometry(0.38, 0.38, 0.75, 32, 1, true);
       cylGeom.translate(0, 0.375, 0);
@@ -246,7 +231,7 @@
       grTru.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0.75, 0), new THREE.Vector3(0, 0, 0)]), matDuongCao));
       cacMoHinh['tru'] = grTru;
 
-      // 5. MẶT CẦU
+      // 5. Mặt cầu
       const grMatCau = new THREE.Group();
       const sphGeom = new THREE.SphereGeometry(0.45, 32, 32);
       sphGeom.translate(0, 0.45, 0);
@@ -259,7 +244,7 @@
       taoDiem(grMatCau, new THREE.Vector3(0, 0.45, 0));
       cacMoHinh['matcau'] = grMatCau;
 
-      // 6. HÌNH LẬP PHƯƠNG
+      // 6. Hình lập phương (6 mặt 6 màu)
       const grLapPhuong = new THREE.Group();
       const matsLP = [0,1,2,3,4,5].map(i => taoVatLieu(bangMau[i]));
       const boxGeom = new THREE.BoxGeometry(0.65, 0.65, 0.65);
@@ -273,7 +258,7 @@
       }
       cacMoHinh['lapphuong'] = grLapPhuong;
 
-      // 7. HÌNH HỘP CHỮ NHẬT
+      // 7. Hình hộp chữ nhật (6 mặt 6 màu)
       const grHCN = new THREE.Group();
       const matsHCN = [6,7,8,9,10,11].map(i => taoVatLieu(bangMau[i]));
       const boxHCNGeom = new THREE.BoxGeometry(0.8, 0.45, 0.55);
@@ -287,7 +272,7 @@
       }
       cacMoHinh['hopchunhat'] = grHCN;
 
-      // 8. HÌNH NÓN
+      // 8. Hình nón (2 mặt 2 màu)
       const grNon = new THREE.Group();
       const coneGeom = new THREE.ConeGeometry(0.45, 0.8, 32, 1, true);
       coneGeom.translate(0, 0.4, 0);
@@ -300,7 +285,7 @@
       taoDiem(grNon, new THREE.Vector3(0, 0.8, 0));
       cacMoHinh['non'] = grNon;
 
-      // 9. BÁT DIỆN ĐỀU
+      // 9. Bát diện đều (8 mặt 8 màu)
       const grBatDien = new THREE.Group();
       const rOct = 0.46;
       const oTop = new THREE.Vector3(0, rOct + 0.46, 0), oBot = new THREE.Vector3(0, -rOct + 0.46, 0);
@@ -318,7 +303,7 @@
       [oTop, oBot, o1, o2, o3, o4].forEach(p => taoDiem(grBatDien, p));
       cacMoHinh['batdien'] = grBatDien;
 
-      // 10. 12 MẶT ĐỀU
+      // 10. 12 mặt đều (12 mặt 12 màu)
       const gr12Mat = new THREE.Group();
       const phi = (1 + Math.sqrt(5)) / 2;
       const a = 0.26, b = a / phi, c = a * phi;
@@ -345,7 +330,7 @@
       vDodeca.forEach(p => taoDiem(gr12Mat, p));
       cacMoHinh['muoihimat'] = gr12Mat;
 
-      // 11. 20 MẶT ĐỀU
+      // 11. 20 mặt đều (20 mặt 20 màu)
       const gr20Mat = new THREE.Group();
       const rIco = 0.45;
       const tIco = (1 + Math.sqrt(5)) / 2 * (rIco / Math.sqrt(1 + ((1 + Math.sqrt(5))/2)*((1 + Math.sqrt(5))/2)));
@@ -371,13 +356,13 @@
       vIco.forEach(p => taoDiem(gr20Mat, p));
       cacMoHinh['haimuoimat'] = gr20Mat;
 
-      // Thêm mô hình mặc định vào mainGroup
+      // Nạp mô hình mặc định
       mainGroup.add(cacMoHinh['tudien']);
     }
 
     let moHinhHienTai = 'tudien';
 
-    // 5. Hàm chuyển đổi mô hình
+    // 5. Chuyển đổi mô hình khi chọn menu
     window.chuyenHinh = function(loai, btn) {
       document.querySelectorAll('.btn-hinh').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
@@ -391,12 +376,45 @@
       }
     };
 
-    // 6. Vòng lặp render chuẩn WebXR (Bắt buộc để VR hoạt động)
+    // 6. Xử lý logic VR chuẩn WebXR
+    const vrBtn = document.getElementById('vr-btn');
+    let currentSession = null;
+
+    if ('xr' in navigator) {
+      navigator.xr.isSessionSupported('immersive-vr').then(supported => {
+        if (supported) {
+          vrBtn.addEventListener('click', onVRButtonClick);
+        } else {
+          vrBtn.disabled = true;
+          vrBtn.textContent = 'VR CHƯA ĐƯỢC HỖ TRỢ';
+        }
+      });
+    } else {
+      vrBtn.disabled = true;
+      vrBtn.textContent = 'TRÌNH DUYỆT KHÔNG HỖ TRỢ VR';
+    }
+
+    function onVRButtonClick() {
+      if (currentSession === null) {
+        navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'bounded-floor'] }).then(session => {
+          currentSession = session;
+          vrBtn.textContent = 'THOÁT VR';
+          renderer.xr.setSession(session);
+          session.addEventListener('end', () => {
+            currentSession = null;
+            vrBtn.textContent = 'KHỞI ĐỘNG VR';
+          });
+        });
+      } else {
+        currentSession.end();
+      }
+    }
+
+    // 7. Vòng lặp Animation Loop
     renderer.setAnimationLoop(function () {
       if (!renderer.xr.isPresenting) {
         controls.update();
       } else {
-        // Tự xoay nhẹ mô hình khi đang ở trong kính VR
         mainGroup.rotation.y += 0.005;
       }
       renderer.render(scene, camera);
