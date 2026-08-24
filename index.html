@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="vi">
+	<head>
+		<meta charset="UTF-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+				<title>AR Toán Học - Ứng Dụng Tích Phân Tính Diện Tích</title>
+				<script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+				<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+				<style>
+					body { margin: 0; overflow: hidden; font-family: sans-serif; }
+					#bang-thong-bao {
+					position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
+					background: rgba(15, 23, 42, 0.92); color: white; padding: 12px 20px;
+					border-radius: 12px; text-align: center; z-index: 9999; font-size: 14px;
+					width: 85%; max-width: 380px; box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+					border: 1px solid rgba(255,255,255,0.15);
+					}
+					#tieu-de { font-weight: bold; color: #38bdf8; font-size: 16px; margin-bottom: 4px; }
+					
+					#lop-kich-hoat {
+					position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+					background: rgba(15, 23, 42, 0.96); z-index: 99999; display: flex;
+					flex-direction: column; justify-content: center; align-items: center; color: white;
+					}
+					#btn-kich-hoat {
+					padding: 14px 28px; font-size: 16px; font-weight: bold;
+					background: #38bdf8; color: #0f172a; border: none;
+					border-radius: 30px; cursor: pointer; margin-top: 15px;
+					box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4);
+					}
+				</style>
+			</head>
+			<body>
+				
+				<div id="lop-kich-hoat">
+					<h2 style="margin: 0; font-size: 20px; color: #38bdf8;">AR TOÁN HỌC 12</h2>
+					<p style="color: #94a3b8; font-size: 14px; margin-top: 8px;">Mô phỏng Diện tích hình phẳng bằng Tích phân</p>
+					<button id="btn-kich-hoat" onclick="moKhoaTraiNghiem()">BẮT ĐẦU QUAN SÁT</button>
+				</div>
+				
+				<div id="bang-thong-bao">
+					<div id="tieu-de">f(x) = -x² + 4 (x ∈ [-2; 2])</div>
+					<div id="noi-dung">Đang dựng các dải hình chữ nhật xấp xỉ diện tích...</div>
+				</div>
+				
+				<a-scene 
+					mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; filterMinCF:0.001; filterBeta: 1000;" 
+					color-space="sRGB" 
+					renderer="colorManagement: true, physicallyCorrectLights" 
+					vr-mode-ui="enabled: false" 
+					device-orientation-permission-ui="enabled: false">
+					
+					<a-light type="ambient" color="#ffffff" intensity="1.2"></a-light>
+					<a-light type="directional" color="#ffffff" intensity="0.8" position="0 3 2"></a-light>
+					
+					<a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+					
+					<!-- Thẻ 0: Đồ thị Parabol -->
+					<a-entity id="the-dothi" mindar-image-target="targetIndex: 0">
+						
+						<!-- Cụm chứa các cột hình chữ nhật 3D tổng Riemann -->
+						<!-- Đặt vị trí khớp với tâm gốc tọa độ trên thẻ -->
+						<a-entity id="khung-chua-riemann" position="0 -0.22 0.02"></a-entity>
+						
+						<!-- Nhãn hiển thị số lượng dải chữ nhật và diện tích xấp xỉ -->
+						<a-text id="nhan-thong-so" value="" position="0 0.55 0" align="center" scale="0.55 0.55 0.55" color="#38bdf8"></a-text>
+						<a-text value="S = 32/3 ≈ 10,67" position="0 -0.42 0" align="center" scale="0.5 0.5 0.5" color="#fbbf24"></a-text>
+						
+					</a-entity>
+				</a-scene>
+				
+				<script>
+					let giongNoiChuan = null;
+					
+					function layGiongDoc() {
+					if ('speechSynthesis' in window) {
+					const voices = window.speechSynthesis.getVoices();
+					giongNoiChuan = voices.find(v => v.lang.includes('vi')) || null;
+					}
+					}
+					if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = layGiongDoc;
+					
+					function moKhoaTraiNghiem() {
+					document.getElementById('lop-kich-hoat').style.display = 'none';
+					if ('speechSynthesis' in window) {
+					window.speechSynthesis.cancel();
+					const amThanhMoDau = new SpeechSynthesisUtterance('');
+					window.speechSynthesis.speak(amThanhMoDau);
+					layGiongDoc();
+					}
+					phatGiongNoi("Khi số lượng hình chữ nhật tiến tới vô cùng, tổng diện tích các hình chữ nhật chính là tích phân từ âm 2 đến 2 của hàm số.");
+					}
+					
+					function phatGiongNoi(cauNoi) {
+					if ('speechSynthesis' in window) {
+					window.speechSynthesis.cancel();
+					const msg = new SpeechSynthesisUtterance(cauNoi);
+					msg.lang = 'vi-VN';
+					if (giongNoiChuan) msg.voice = giongNoiChuan;
+					msg.rate = 0.95;
+					window.speechSynthesis.speak(msg);
+					}
+					}
+					
+					const khungChua = document.querySelector('#khung-chua-riemann');
+					const nhanThongSo = document.querySelector('#nhan-thong-so');
+					const tieuDe = document.querySelector('#tieu-de');
+					const noiDung = document.querySelector('#noi-dung');
+					
+					function f(x) {
+					return -x * x + 4;
+					}
+					
+					const a = -2;
+					const b = 2;
+					const tiLeX = 0.18; // Tỉ lệ co giãn tọa độ hiển thị trong AR
+					const tiLeY = 0.12;
+					
+					function capNhatRiemann(soLuongN) {
+					khungChua.innerHTML = '';
+					const dx = (b - a) / soLuongN;
+					let tongDienTich = 0;
+					
+					for (let i = 0; i < soLuongN; i++) {
+					const xMid = a + i * dx + dx / 2;
+					const yVal = f(xMid);
+					tongDienTich += yVal * dx;
+					
+					const w = dx * tiLeX * 0.92;
+					const h = yVal * tiLeY;
+					const posX = xMid * tiLeX;
+					const posY = h / 2;
+					
+					const box = document.createElement('a-box');
+					box.setAttribute('width', w);
+					box.setAttribute('height', h);
+					box.setAttribute('depth', 0.04);
+					box.setAttribute('position', `${posX} ${posY} 0`);
+					box.setAttribute('material', 'color: #f59e0b; shader: flat; opacity: 0.82; transparent: true');
+					
+					khungChua.appendChild(box);
+					}
+					
+					const sThucTe = (32 / 3).toFixed(2).replace('.', ',');
+					const sXapXi = tongDienTich.toFixed(2).replace('.', ',');
+					nhanThongSo.setAttribute('value', `So dai chia: n = ${soLuongN}\nTong S ≈ ${sXapXi}`);
+					noiDung.innerText = `n = ${soLuongN} dải hình chữ nhật | S xấp xỉ = ${sXapXi} (S chính xác = ${sThucTe})`;
+					}
+					
+					// Tự động tăng số dải chữ nhật từ 4 đến 40 để học sinh quan sát giới hạn
+					let nHienTai = 4;
+					let chieuTang = true;
+					
+					setInterval(() => {
+					capNhatRiemann(nHienTai);
+					if (chieuTang) {
+					nHienTai += 2;
+					if (nHienTai >= 36) chieuTang = false;
+					} else {
+					nHienTai -= 2;
+					if (nHienTai <= 4) chieuTang = true;
+					}
+					}, 700);
+				</script>
+			</body>
+		</html>
