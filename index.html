@@ -2,143 +2,64 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>AR Mặt Bàn - Khối Tứ Diện Đều</title>
-  <!-- Sử dụng A-Frame bản 1.4.2 tối ưu nhất cho WebXR -->
-  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <!-- Bổ sung thư viện giúp các nhãn chữ luôn xoay về hướng người xem -->
-  <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AR Khối Tứ Diện Đều - iPhone & Android</title>
+  <!-- Thư viện Model Viewer chuẩn quốc tế cho mọi thiết bị -->
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
   <style>
-    body { margin: 0; overflow: hidden; font-family: sans-serif; background: #0f172a; }
+    body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: #0f172a; font-family: sans-serif; }
+    model-viewer { width: 100%; height: 100%; background-color: #0f172a; }
     
-    /* Lớp giao diện nổi trên màn hình AR */
-    #ui-container {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      pointer-events: none; z-index: 9999; display: none;
-    }
-    #thong-bao {
-      position: absolute; top: 25px; left: 50%; transform: translateX(-50%);
-      background: rgba(15, 23, 42, 0.85); color: #38bdf8; padding: 12px 20px;
-      border-radius: 12px; text-align: center; font-size: 14px; font-weight: bold;
-      width: 85%; max-width: 350px; pointer-events: auto; border: 1px solid #38bdf8;
-    }
-    #btn-dat {
-      position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-      padding: 15px 30px; font-size: 16px; font-weight: bold; background: #fbbf24;
-      color: #0f172a; border: none; border-radius: 30px; cursor: pointer;
-      pointer-events: auto; display: none; box-shadow: 0 4px 15px rgba(251,191,36,0.4);
+    #huong-dan {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.85); color: #38bdf8; padding: 10px 20px;
+      border-radius: 20px; font-size: 14px; font-weight: bold; border: 1px solid #38bdf8;
+      pointer-events: none; z-index: 10; text-align: center; width: 80%; max-width: 320px;
     }
     
-    /* Tùy chỉnh lại nút bấm "Enter AR" mặc định của A-Frame */
-    .a-enter-vr-button { background-color: #38bdf8 !important; color: #0f172a !important; font-weight: bold; }
+    #ar-button {
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+      background: #fbbf24; color: #0f172a; border: none; border-radius: 30px;
+      padding: 14px 28px; font-size: 16px; font-weight: bold; cursor: pointer;
+      box-shadow: 0 4px 15px rgba(251, 191, 36, 0.4); z-index: 10;
+    }
   </style>
 </head>
 <body>
 
-  <!-- UI Overlay -->
-  <div id="ui-container">
-    <div id="thong-bao">Hãy từ từ di chuyển camera để quét mặt bàn...</div>
-    <button id="btn-dat" onclick="datMoHinh()">ĐẶT MÔ HÌNH VÀO ĐÂY</button>
-  </div>
+  <div id="huong-dan">Khối Tứ Diện Đều A.BCD<br><span style="font-size: 12px; color: #94a3b8; font-weight: normal;">Bấm nút bên dưới để đặt lên mặt bàn</span></div>
 
-  <!-- Thiết lập không gian AR (WebXR) -->
-  <a-scene
-    webxr="requiredFeatures: hit-test, dom-overlay; overlayElement: #ui-container"
-    renderer="colorManagement: true, physicallyCorrectLights"
-    ar-hit-test="target: #vong-dinh-vi">
+  <!-- Trình hiển thị 3D & AR tương thích 100% iPhone (Quick Look) và Android (Scene Viewer) -->
+  <model-viewer 
+    id="viewer"
+    camera-controls 
+    touch-action="pan-y" 
+    auto-rotate 
+    ar 
+    ar-modes="quick-look scene-viewer webxr" 
+    shadow-intensity="1"
+    exposure="1.2">
+    
+    <button slot="ar-button" id="ar-button">
+      XEM TRONG KHÔNG GIAN THỰC (AR)
+    </button>
+  </model-viewer>
 
-    <a-light type="ambient" color="#ffffff" intensity="1.5"></a-light>
-    <a-light type="directional" color="#ffffff" intensity="1.0" position="1 3 2"></a-light>
-
-    <!-- Vòng định vị (Reticle) trượt dọc theo mặt phẳng thực tế -->
-    <a-entity id="vong-dinh-vi" position="0 0 -1" rotation="-90 0 0" visible="false">
-      <a-ring radius-inner="0.08" radius-outer="0.12" color="#38bdf8" material="opacity: 0.9; shader: flat"></a-ring>
-      <a-circle radius="0.03" color="#fbbf24" material="opacity: 0.9; shader: flat"></a-circle>
-    </a-entity>
-
-    <!-- Khối 3D Tứ Diện Đều (Ẩn đi cho đến khi người dùng bấm nút) -->
-    <a-entity id="cum-mo-hinh" visible="false" scale="0.5 0.5 0.5">
-      <a-entity id="mesh-container"></a-entity>
-      <a-text value="Tu dien deu A.BCD" position="0 1.0 0" align="center" scale="0.4 0.4 0.4" color="#fbbf24" look-at="[camera]"></a-text>
-    </a-entity>
-  </a-scene>
+  <!-- Dựng hình 3D Khối Tứ Diện Đều và xuất trực tiếp thành file GLB động -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
 
   <script>
-    // 1. Thuật toán Hit-Test: Liên tục dò tìm mặt phẳng
-    AFRAME.registerComponent('ar-hit-test', {
-      schema: { target: { type: 'selector' } },
-      init: function () {
-        this.xrHitTestSource = null;
-        this.viewerSpace = null;
-        this.refSpace = null;
-        this.targetEl = this.data.target;
-        this.daDat = false;
-
-        this.el.sceneEl.renderer.xr.addEventListener('sessionstart', () => {
-          document.getElementById('ui-container').style.display = 'block';
-          let session = this.el.sceneEl.renderer.xr.getSession();
-
-          session.requestReferenceSpace('viewer').then((space) => {
-            this.viewerSpace = space;
-            session.requestHitTestSource({ space: this.viewerSpace }).then((source) => {
-              this.xrHitTestSource = source;
-            });
-          });
-          session.requestReferenceSpace('local-floor').then((space) => {
-            this.refSpace = space;
-          });
-        });
-      },
-      tick: function () {
-        if (this.el.sceneEl.is('ar-mode') && this.xrHitTestSource && this.refSpace && !this.daDat) {
-          let frame = this.el.sceneEl.frame;
-          let pose = frame.getViewerPose(this.refSpace);
-          if (pose && this.xrHitTestSource) {
-            let hitTestResults = frame.getHitTestResults(this.xrHitTestSource);
-            if (hitTestResults.length > 0) {
-              let hitPose = hitTestResults[0].getPose(this.refSpace);
-              this.targetEl.setAttribute('position', hitPose.transform.position);
-              this.targetEl.setAttribute('visible', 'true');
-              document.getElementById('btn-dat').style.display = 'block';
-              document.getElementById('thong-bao').innerText = "Đã tìm thấy mặt bàn!";
-            } else {
-              this.targetEl.setAttribute('visible', 'false');
-              document.getElementById('btn-dat').style.display = 'none';
-              document.getElementById('thong-bao').innerText = "Hãy từ từ di chuyển điện thoại quét mặt bàn...";
-            }
-          }
-        }
-      }
-    });
-
-    // 2. Chức năng Đặt Mô Hình
-    const cumMoHinh = document.querySelector('#cum-mo-hinh');
-    const vongDinhVi = document.querySelector('#vong-dinh-vi');
-    const nutDat = document.querySelector('#btn-dat');
-    const thongBao = document.querySelector('#thong-bao');
-    const heThongAR = document.querySelector('a-scene').components['ar-hit-test'];
-
-    window.datMoHinh = function() {
-      if (!vongDinhVi.getAttribute('visible')) return;
-      
-      const viTri = vongDinhVi.getAttribute('position');
-      cumMoHinh.setAttribute('position', viTri);
-      cumMoHinh.setAttribute('visible', 'true');
-
-      heThongAR.daDat = true;
-      vongDinhVi.setAttribute('visible', 'false');
-      nutDat.style.display = 'none';
-      thongBao.innerText = "Đã ghim mô hình! Bạn có thể đi lại tự do để ngắm nhìn.";
-    };
-
-    // 3. Dựng hình Khối Tứ Diện Đều
-    const meshContainer = document.querySelector('#mesh-container');
-    const vA = new THREE.Vector3(0, 0.65, 0);
-    const vB = new THREE.Vector3(0, 0, 0.46);
-    const vC = new THREE.Vector3(-0.4, 0, -0.23);
-    const vD = new THREE.Vector3(0.4, 0, -0.23);
+    // 1. Tọa độ các đỉnh Tứ diện đều
+    const vA = new THREE.Vector3(0, 0.816, 0);
+    const vB = new THREE.Vector3(0, 0, 0.577);
+    const vC = new THREE.Vector3(-0.5, 0, -0.289);
+    const vD = new THREE.Vector3(0.5, 0, -0.289);
     const vH = new THREE.Vector3(0, 0, 0);
 
+    const scene = new THREE.Scene();
+
+    // 2. Tạo các mặt tam giác đều
     const geometry = new THREE.BufferGeometry();
     const vertices = new Float32Array([
       vB.x, vB.y, vB.z,   vC.x, vC.y, vC.z,   vD.x, vD.y, vD.z,
@@ -149,51 +70,41 @@
     geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
     geometry.computeVertexNormals();
 
-    const mesh = new THREE.Mesh(
-      geometry,
-      new THREE.MeshStandardMaterial({ color: 0x38bdf8, opacity: 0.65, transparent: true, side: THREE.DoubleSide, roughness: 0.1 })
-    );
+    const material = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      roughness: 0.2,
+      metalness: 0.1,
+      side: THREE.DoubleSide
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    scene.add(mesh);
 
-    const wireframe = new THREE.LineSegments(
-      new THREE.WireframeGeometry(geometry),
-      new THREE.LineBasicMaterial({ color: 0x0284c7, linewidth: 3 })
-    );
+    // 3. Khung viền và đường cao AH
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x0284c7 });
+    const wireframe = new THREE.LineSegments(new THREE.WireframeGeometry(geometry), lineMat);
+    scene.add(wireframe);
 
-    const lineAHGeom = new THREE.BufferGeometry().setFromPoints([vA, vH]);
     const lineAH = new THREE.Line(
-      lineAHGeom,
-      new THREE.LineBasicMaterial({ color: 0xef4444, linewidth: 3 })
+      new THREE.BufferGeometry().setFromPoints([vA, vH]),
+      new THREE.LineBasicMaterial({ color: 0xef4444 })
     );
+    scene.add(lineAH);
 
-    const group = new THREE.Group();
-    group.add(mesh);
-    group.add(wireframe);
-    group.add(lineAH);
-    meshContainer.setObject3D('mesh', group);
+    // 4. Các đỉnh A, B, C, D
+    const sphereMat = new THREE.MeshBasicMaterial({ color: 0xdc2626 });
+    [vA, vB, vC, vD].forEach(pt => {
+      const sp = new THREE.Mesh(new THREE.SphereGeometry(0.04, 16, 16), sphereMat);
+      sp.position.copy(pt);
+      scene.add(sp);
+    });
 
-    const taoDiem = (pos, ten, offset) => {
-      const sp = document.createElement('a-sphere');
-      sp.setAttribute('radius', '0.03');
-      sp.setAttribute('color', '#dc2626');
-      sp.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
-
-      const txt = document.createElement('a-text');
-      txt.setAttribute('value', ten);
-      txt.setAttribute('position', `${pos.x + offset.x} ${pos.y + offset.y} ${pos.z + offset.z}`);
-      txt.setAttribute('scale', '0.4 0.4 0.4');
-      txt.setAttribute('color', '#ffffff');
-      txt.setAttribute('align', 'center');
-      txt.setAttribute('look-at', '[camera]'); // Điểm neo chữ luôn nhìn về người xem
-
-      meshContainer.appendChild(sp);
-      meshContainer.appendChild(txt);
-    };
-
-    taoDiem(vA, 'A', {x: 0, y: 0.08, z: 0});
-    taoDiem(vB, 'B', {x: 0, y: -0.06, z: 0.06});
-    taoDiem(vC, 'C', {x: -0.06, y: -0.06, z: 0});
-    taoDiem(vD, 'D', {x: 0.06, y: -0.06, z: 0});
-    taoDiem(vH, 'H', {x: 0, y: -0.06, z: -0.06});
+    // 5. Xuất mô hình sang định dạng GLB để model-viewer hiển thị
+    const exporter = new THREE.GLTFExporter();
+    exporter.parse(scene, function (gltf) {
+      const blob = new Blob([gltf], { type: 'model/gltf-binary' });
+      const url = URL.createObjectURL(blob);
+      document.getElementById('viewer').src = url;
+    }, { binary: true });
   </script>
 </body>
 </html>
