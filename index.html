@@ -3,114 +3,136 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>AR Khối Tứ Diện Đều</title>
-  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+  <title>AR Mặt Bàn - Khối Tứ Diện Đều</title>
+  <!-- Sử dụng A-Frame bản 1.4.2 tối ưu nhất cho WebXR -->
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <!-- Bổ sung thư viện giúp các nhãn chữ luôn xoay về hướng người xem -->
+  <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
   <style>
-    body { margin: 0; overflow: hidden; font-family: sans-serif; }
-    #bang-thong-bao {
-      position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
-      background: rgba(15, 23, 42, 0.92); color: white; padding: 12px 20px;
-      border-radius: 12px; text-align: center; z-index: 9999; font-size: 14px;
-      width: 85%; max-width: 380px; box-shadow: 0 4px 15px rgba(0,0,0,0.6);
-      border: 1px solid rgba(255,255,255,0.15);
-    }
-    #tieu-de { font-weight: bold; color: #38bdf8; font-size: 16px; margin-bottom: 4px; }
+    body { margin: 0; overflow: hidden; font-family: sans-serif; background: #0f172a; }
     
-    #lop-kich-hoat {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(15, 23, 42, 0.96); z-index: 99999; display: flex;
-      flex-direction: column; justify-content: center; align-items: center; color: white;
+    /* Lớp giao diện nổi trên màn hình AR */
+    #ui-container {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 9999; display: none;
     }
-    #btn-kich-hoat {
-      padding: 14px 28px; font-size: 16px; font-weight: bold;
-      background: #38bdf8; color: #0f172a; border: none;
-      border-radius: 30px; cursor: pointer; margin-top: 15px;
-      box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4);
+    #thong-bao {
+      position: absolute; top: 25px; left: 50%; transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.85); color: #38bdf8; padding: 12px 20px;
+      border-radius: 12px; text-align: center; font-size: 14px; font-weight: bold;
+      width: 85%; max-width: 350px; pointer-events: auto; border: 1px solid #38bdf8;
     }
-
-    /* Nút thiết lập lại vị trí */
-    #btn-reset {
-      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-      padding: 10px 20px; font-size: 13px; font-weight: bold;
-      background: rgba(15, 23, 42, 0.85); color: #38bdf8; border: 1px solid #38bdf8;
-      border-radius: 20px; z-index: 9999; display: none;
-      cursor: pointer;
+    #btn-dat {
+      position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+      padding: 15px 30px; font-size: 16px; font-weight: bold; background: #fbbf24;
+      color: #0f172a; border: none; border-radius: 30px; cursor: pointer;
+      pointer-events: auto; display: none; box-shadow: 0 4px 15px rgba(251,191,36,0.4);
     }
+    
+    /* Tùy chỉnh lại nút bấm "Enter AR" mặc định của A-Frame */
+    .a-enter-vr-button { background-color: #38bdf8 !important; color: #0f172a !important; font-weight: bold; }
   </style>
 </head>
 <body>
 
-  <div id="lop-kich-hoat">
-    <h2 style="margin: 0; font-size: 20px; color: #38bdf8;">HÌNH HỌC KHÔNG GIAN 12</h2>
-    <p style="color: #94a3b8; font-size: 14px; margin-top: 8px;">Quan sát Khối Tứ Diện Đều A.BCD</p>
-    <button id="btn-kich-hoat" onclick="moKhoaTraiNghiem()">BẮT ĐẦU QUAN SÁT</button>
+  <!-- UI Overlay -->
+  <div id="ui-container">
+    <div id="thong-bao">Hãy từ từ di chuyển camera để quét mặt bàn...</div>
+    <button id="btn-dat" onclick="datMoHinh()">ĐẶT MÔ HÌNH VÀO ĐÂY</button>
   </div>
 
-  <div id="bang-thong-bao">
-    <div id="tieu-de">Đang tìm thẻ...</div>
-    <div id="noi-dung">Hướng camera vào thẻ để quét và cố định mô hình 3D</div>
-  </div>
-
-  <button id="btn-reset" onclick="quetLai()">QUÉT LẠI THẺ</button>
-
-  <a-scene 
-    mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; filterMinCF: 0.0001; filterBeta: 1000;" 
-    color-space="sRGB" 
-    renderer="colorManagement: true, physicallyCorrectLights" 
-    vr-mode-ui="enabled: false" 
-    device-orientation-permission-ui="enabled: false">
+  <!-- Thiết lập không gian AR (WebXR) -->
+  <a-scene
+    webxr="requiredFeatures: hit-test, dom-overlay; overlayElement: #ui-container"
+    renderer="colorManagement: true, physicallyCorrectLights"
+    ar-hit-test="target: #vong-dinh-vi">
 
     <a-light type="ambient" color="#ffffff" intensity="1.5"></a-light>
     <a-light type="directional" color="#ffffff" intensity="1.0" position="1 3 2"></a-light>
 
-    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
-    <!-- Thẻ mục tiêu -->
-    <a-entity id="target-marker" mindar-image-target="targetIndex: 0"></a-entity>
-
-    <!-- MÔ HÌNH CỐ ĐỊNH TRONG KHÔNG GIAN -->
-    <a-entity id="cum-khong-gian" position="0 -0.1 -1.5" scale="1 1 1" visible="false">
-      <a-entity id="khoi-xoay">
-        <a-entity id="mesh-container"></a-entity>
-      </a-entity>
-      <a-text value="Tu dien deu A.BCD" position="0 0.85 0" align="center" scale="0.6 0.6 0.6" color="#fbbf24"></a-text>
+    <!-- Vòng định vị (Reticle) trượt dọc theo mặt phẳng thực tế -->
+    <a-entity id="vong-dinh-vi" position="0 0 -1" rotation="-90 0 0" visible="false">
+      <a-ring radius-inner="0.08" radius-outer="0.12" color="#38bdf8" material="opacity: 0.9; shader: flat"></a-ring>
+      <a-circle radius="0.03" color="#fbbf24" material="opacity: 0.9; shader: flat"></a-circle>
     </a-entity>
 
+    <!-- Khối 3D Tứ Diện Đều (Ẩn đi cho đến khi người dùng bấm nút) -->
+    <a-entity id="cum-mo-hinh" visible="false" scale="0.5 0.5 0.5">
+      <a-entity id="mesh-container"></a-entity>
+      <a-text value="Tu dien deu A.BCD" position="0 1.0 0" align="center" scale="0.4 0.4 0.4" color="#fbbf24" look-at="[camera]"></a-text>
+    </a-entity>
   </a-scene>
 
   <script>
-    let giongNoiChuan = null;
+    // 1. Thuật toán Hit-Test: Liên tục dò tìm mặt phẳng
+    AFRAME.registerComponent('ar-hit-test', {
+      schema: { target: { type: 'selector' } },
+      init: function () {
+        this.xrHitTestSource = null;
+        this.viewerSpace = null;
+        this.refSpace = null;
+        this.targetEl = this.data.target;
+        this.daDat = false;
 
-    function layGiongDoc() {
-      if ('speechSynthesis' in window) {
-        const voices = window.speechSynthesis.getVoices();
-        giongNoiChuan = voices.find(v => v.lang.includes('vi')) || null;
+        this.el.sceneEl.renderer.xr.addEventListener('sessionstart', () => {
+          document.getElementById('ui-container').style.display = 'block';
+          let session = this.el.sceneEl.renderer.xr.getSession();
+
+          session.requestReferenceSpace('viewer').then((space) => {
+            this.viewerSpace = space;
+            session.requestHitTestSource({ space: this.viewerSpace }).then((source) => {
+              this.xrHitTestSource = source;
+            });
+          });
+          session.requestReferenceSpace('local-floor').then((space) => {
+            this.refSpace = space;
+          });
+        });
+      },
+      tick: function () {
+        if (this.el.sceneEl.is('ar-mode') && this.xrHitTestSource && this.refSpace && !this.daDat) {
+          let frame = this.el.sceneEl.frame;
+          let pose = frame.getViewerPose(this.refSpace);
+          if (pose && this.xrHitTestSource) {
+            let hitTestResults = frame.getHitTestResults(this.xrHitTestSource);
+            if (hitTestResults.length > 0) {
+              let hitPose = hitTestResults[0].getPose(this.refSpace);
+              this.targetEl.setAttribute('position', hitPose.transform.position);
+              this.targetEl.setAttribute('visible', 'true');
+              document.getElementById('btn-dat').style.display = 'block';
+              document.getElementById('thong-bao').innerText = "Đã tìm thấy mặt bàn!";
+            } else {
+              this.targetEl.setAttribute('visible', 'false');
+              document.getElementById('btn-dat').style.display = 'none';
+              document.getElementById('thong-bao').innerText = "Hãy từ từ di chuyển điện thoại quét mặt bàn...";
+            }
+          }
+        }
       }
-    }
-    if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = layGiongDoc;
+    });
 
-    function moKhoaTraiNghiem() {
-      document.getElementById('lop-kich-hoat').style.display = 'none';
+    // 2. Chức năng Đặt Mô Hình
+    const cumMoHinh = document.querySelector('#cum-mo-hinh');
+    const vongDinhVi = document.querySelector('#vong-dinh-vi');
+    const nutDat = document.querySelector('#btn-dat');
+    const thongBao = document.querySelector('#thong-bao');
+    const heThongAR = document.querySelector('a-scene').components['ar-hit-test'];
+
+    window.datMoHinh = function() {
+      if (!vongDinhVi.getAttribute('visible')) return;
       
-      // Chỉ mở luồng âm thanh ngầm (không phát ra tiếng) để xin quyền trình duyệt
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const msg = new SpeechSynthesisUtterance('');
-        window.speechSynthesis.speak(msg);
-        layGiongDoc();
-      }
-    }
+      const viTri = vongDinhVi.getAttribute('position');
+      cumMoHinh.setAttribute('position', viTri);
+      cumMoHinh.setAttribute('visible', 'true');
 
+      heThongAR.daDat = true;
+      vongDinhVi.setAttribute('visible', 'false');
+      nutDat.style.display = 'none';
+      thongBao.innerText = "Đã ghim mô hình! Bạn có thể đi lại tự do để ngắm nhìn.";
+    };
+
+    // 3. Dựng hình Khối Tứ Diện Đều
     const meshContainer = document.querySelector('#mesh-container');
-    const khoiXoay = document.querySelector('#khoi-xoay');
-    const cumKhongGian = document.querySelector('#cum-khong-gian');
-    const targetMarker = document.querySelector('#target-marker');
-    const tieuDe = document.querySelector('#tieu-de');
-    const noiDung = document.querySelector('#noi-dung');
-    const btnReset = document.querySelector('#btn-reset');
-
-    // DỰNG TỨ DIỆN ĐỀU BẰNG THREE.JS
     const vA = new THREE.Vector3(0, 0.65, 0);
     const vB = new THREE.Vector3(0, 0, 0.46);
     const vC = new THREE.Vector3(-0.4, 0, -0.23);
@@ -129,14 +151,7 @@
 
     const mesh = new THREE.Mesh(
       geometry,
-      new THREE.MeshStandardMaterial({
-        color: 0x38bdf8,
-        opacity: 0.65,
-        transparent: true,
-        side: THREE.DoubleSide,
-        roughness: 0.1,
-        metalness: 0.2
-      })
+      new THREE.MeshStandardMaterial({ color: 0x38bdf8, opacity: 0.65, transparent: true, side: THREE.DoubleSide, roughness: 0.1 })
     );
 
     const wireframe = new THREE.LineSegments(
@@ -161,89 +176,24 @@
       sp.setAttribute('radius', '0.03');
       sp.setAttribute('color', '#dc2626');
       sp.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
-      
+
       const txt = document.createElement('a-text');
       txt.setAttribute('value', ten);
       txt.setAttribute('position', `${pos.x + offset.x} ${pos.y + offset.y} ${pos.z + offset.z}`);
-      txt.setAttribute('scale', '0.45 0.45 0.45');
+      txt.setAttribute('scale', '0.4 0.4 0.4');
       txt.setAttribute('color', '#ffffff');
       txt.setAttribute('align', 'center');
-      
+      txt.setAttribute('look-at', '[camera]'); // Điểm neo chữ luôn nhìn về người xem
+
       meshContainer.appendChild(sp);
       meshContainer.appendChild(txt);
     };
 
-    taoDiem(vA, 'A', {x: 0, y: 0.07, z: 0});
-    taoDiem(vB, 'B', {x: 0, y: -0.05, z: 0.05});
-    taoDiem(vC, 'C', {x: -0.05, y: -0.05, z: 0});
-    taoDiem(vD, 'D', {x: 0.05, y: -0.05, z: 0});
-    taoDiem(vH, 'H', {x: 0, y: -0.05, z: -0.05});
-
-    // CƠ CHẾ BẮT DẤU KHÔNG MẤT HÌNH & PHÁT ÂM THANH KHI QUÉT TRÚNG
-    let daKhoaHinh = false;
-
-    targetMarker.addEventListener('targetFound', () => {
-      if (!daKhoaHinh) {
-        daKhoaHinh = true;
-        cumKhongGian.setAttribute('visible', 'true');
-        btnReset.style.display = 'block';
-        tieuDe.innerText = "Đã khóa mô hình 3D!";
-        noiDung.innerText = "Dùng ngón tay vuốt màn hình để xoay tứ diện đều 360 độ";
-
-        // Phát giọng nói SAU KHI nhận diện thẻ thành công
-        if ('speechSynthesis' in window) {
-          window.speechSynthesis.cancel();
-          const msg = new SpeechSynthesisUtterance('Đã nhận diện thành công khối tứ diện đều. Khối tứ diện đều có bốn mặt là các tam giác đều bằng nhau. Bạn có thể dùng ngón tay vuốt trên màn hình để xoay và quan sát các mặt.');
-          msg.lang = 'vi-VN';
-          if (giongNoiChuan) msg.voice = giongNoiChuan;
-          msg.rate = 0.95;
-          window.speechSynthesis.speak(msg);
-        }
-      }
-    });
-
-    function quetLai() {
-      daKhoaHinh = false;
-      cumKhongGian.setAttribute('visible', 'false');
-      btnReset.style.display = 'none';
-      tieuDe.innerText = "Đang tìm thẻ...";
-      noiDung.innerText = "Hướng camera vào thẻ để cố định mô hình 3D";
-      window.speechSynthesis.cancel(); // Ngắt giọng nói nếu đang đọc dở
-    }
-
-    // ĐIỀU KHIỂN XOAY MÔ HÌNH BẰNG CẢM ỨNG VUỐT MÀN HÌNH
-    let isTouching = false;
-    let previousTouchX = 0;
-    let previousTouchY = 0;
-    let rotX = 0;
-    let rotY = 0;
-
-    window.addEventListener('touchstart', (e) => {
-      if (e.touches.length === 1) {
-        isTouching = true;
-        previousTouchX = e.touches[0].clientX;
-        previousTouchY = e.touches[0].clientY;
-      }
-    });
-
-    window.addEventListener('touchmove', (e) => {
-      if (isTouching && e.touches.length === 1 && daKhoaHinh) {
-        const deltaX = e.touches[0].clientX - previousTouchX;
-        const deltaY = e.touches[0].clientY - previousTouchY;
-
-        rotY += deltaX * 0.6;
-        rotX += deltaY * 0.6;
-
-        khoiXoay.setAttribute('rotation', `${rotX} ${rotY} 0`);
-
-        previousTouchX = e.touches[0].clientX;
-        previousTouchY = e.touches[0].clientY;
-      }
-    });
-
-    window.addEventListener('touchend', () => {
-      isTouching = false;
-    });
+    taoDiem(vA, 'A', {x: 0, y: 0.08, z: 0});
+    taoDiem(vB, 'B', {x: 0, y: -0.06, z: 0.06});
+    taoDiem(vC, 'C', {x: -0.06, y: -0.06, z: 0});
+    taoDiem(vD, 'D', {x: 0.06, y: -0.06, z: 0});
+    taoDiem(vH, 'H', {x: 0, y: -0.06, z: -0.06});
   </script>
 </body>
 </html>
