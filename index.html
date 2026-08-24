@@ -3,19 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR Khối Tứ Diện Đều - iPhone & Android</title>
-  <!-- Thư viện Model Viewer chuẩn quốc tế cho mọi thiết bị -->
+  <title>AR Phòng Học Hình Học Không Gian 12</title>
   <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
   <style>
     body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: #0f172a; font-family: sans-serif; }
     model-viewer { width: 100%; height: 100%; background-color: #0f172a; }
     
-    #huong-dan {
-      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-      background: rgba(15, 23, 42, 0.85); color: #38bdf8; padding: 10px 20px;
-      border-radius: 20px; font-size: 14px; font-weight: bold; border: 1px solid #38bdf8;
-      pointer-events: none; z-index: 10; text-align: center; width: 80%; max-width: 320px;
+    /* Menu chuyển đổi nhanh các khối đa diện */
+    #menu-chon {
+      position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 8px; z-index: 10; width: 92%; max-width: 480px;
+      overflow-x: auto; padding: 6px; background: rgba(15, 23, 42, 0.9);
+      border-radius: 25px; border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     }
+    .btn-hinh {
+      padding: 8px 14px; font-size: 13px; font-weight: bold; color: #94a3b8;
+      background: transparent; border: none; border-radius: 20px; cursor: pointer;
+      white-space: nowrap; transition: 0.2s;
+    }
+    .btn-hinh.active { background: #38bdf8; color: #0f172a; }
     
     #ar-button {
       position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
@@ -27,9 +34,14 @@
 </head>
 <body>
 
-  <div id="huong-dan">Khối Tứ Diện Đều A.BCD<br><span style="font-size: 12px; color: #94a3b8; font-weight: normal;">Bấm nút bên dưới để đặt lên mặt bàn</span></div>
+  <!-- Menu chọn 4 khối hình -->
+  <div id="menu-chon">
+    <button class="btn-hinh active" onclick="chuyenHinh('tudien', this)">Tứ diện đều</button>
+    <button class="btn-hinh" onclick="chuyenHinh('choptugiac', this)">Chóp tứ giác đều</button>
+    <button class="btn-hinh" onclick="chuyenHinh('lapphuong', this)">Lập phương</button>
+    <button class="btn-hinh" onclick="chuyenHinh('non', this)">Khối nón</button>
+  </div>
 
-  <!-- Trình hiển thị 3D & AR tương thích 100% iPhone (Quick Look) và Android (Scene Viewer) -->
   <model-viewer 
     id="viewer"
     camera-controls 
@@ -45,66 +57,119 @@
     </button>
   </model-viewer>
 
-  <!-- Dựng hình 3D Khối Tứ Diện Đều và xuất trực tiếp thành file GLB động -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
 
   <script>
-    // 1. Tọa độ các đỉnh Tứ diện đều
-    const vA = new THREE.Vector3(0, 0.816, 0);
-    const vB = new THREE.Vector3(0, 0, 0.577);
-    const vC = new THREE.Vector3(-0.5, 0, -0.289);
-    const vD = new THREE.Vector3(0.5, 0, -0.289);
-    const vH = new THREE.Vector3(0, 0, 0);
-
-    const scene = new THREE.Scene();
-
-    // 2. Tạo các mặt tam giác đều
-    const geometry = new THREE.BufferGeometry();
-    const vertices = new Float32Array([
-      vB.x, vB.y, vB.z,   vC.x, vC.y, vC.z,   vD.x, vD.y, vD.z,
-      vA.x, vA.y, vA.z,   vB.x, vB.y, vB.z,   vC.x, vC.y, vC.z,
-      vA.x, vA.y, vA.z,   vC.x, vC.y, vC.z,   vD.x, vD.y, vD.z,
-      vA.x, vA.y, vA.z,   vD.x, vD.y, vD.z,   vB.x, vB.y, vB.z
-    ]);
-    geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-    geometry.computeVertexNormals();
-
-    const material = new THREE.MeshStandardMaterial({
-      color: 0x38bdf8,
-      roughness: 0.2,
-      metalness: 0.1,
-      side: THREE.DoubleSide
-    });
-    const mesh = new THREE.Mesh(geometry, material);
-    scene.add(mesh);
-
-    // 3. Khung viền và đường cao AH
-    const lineMat = new THREE.LineBasicMaterial({ color: 0x0284c7 });
-    const wireframe = new THREE.LineSegments(new THREE.WireframeGeometry(geometry), lineMat);
-    scene.add(wireframe);
-
-    const lineAH = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([vA, vH]),
-      new THREE.LineBasicMaterial({ color: 0xef4444 })
-    );
-    scene.add(lineAH);
-
-    // 4. Các đỉnh A, B, C, D
-    const sphereMat = new THREE.MeshBasicMaterial({ color: 0xdc2626 });
-    [vA, vB, vC, vD].forEach(pt => {
-      const sp = new THREE.Mesh(new THREE.SphereGeometry(0.04, 16, 16), sphereMat);
-      sp.position.copy(pt);
-      scene.add(sp);
-    });
-
-    // 5. Xuất mô hình sang định dạng GLB để model-viewer hiển thị
     const exporter = new THREE.GLTFExporter();
-    exporter.parse(scene, function (gltf) {
-      const blob = new Blob([gltf], { type: 'model/gltf-binary' });
-      const url = URL.createObjectURL(blob);
-      document.getElementById('viewer').src = url;
-    }, { binary: true });
+    const viewer = document.getElementById('viewer');
+
+    const matXanh = new THREE.MeshStandardMaterial({ color: 0x38bdf8, opacity: 0.65, transparent: true, roughness: 0.2, metalness: 0.1, side: THREE.DoubleSide });
+    const matVien = new THREE.LineBasicMaterial({ color: 0x0284c7, linewidth: 2 });
+    const matDiem = new THREE.MeshBasicMaterial({ color: 0xdc2626 });
+    const matDuongCao = new THREE.LineBasicMaterial({ color: 0xef4444, linewidth: 3 });
+
+    function taoDiem(scene, pos) {
+      const sp = new THREE.Mesh(new THREE.SphereGeometry(0.035, 16, 16), matDiem);
+      sp.position.copy(pos);
+      scene.add(sp);
+    }
+
+    function taoHinh(loai) {
+      const scene = new THREE.Scene();
+
+      if (loai === 'tudien') {
+        // 1. KHỐI TỨ DIỆN ĐỀU A.BCD
+        const vA = new THREE.Vector3(0, 0.816, 0);
+        const vB = new THREE.Vector3(0, 0, 0.577);
+        const vC = new THREE.Vector3(-0.5, 0, -0.289);
+        const vD = new THREE.Vector3(0.5, 0, -0.289);
+        const vH = new THREE.Vector3(0, 0, 0);
+
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+          vB.x, vB.y, vB.z,  vC.x, vC.y, vC.z,  vD.x, vD.y, vD.z,
+          vA.x, vA.y, vA.z,  vB.x, vB.y, vB.z,  vC.x, vC.y, vC.z,
+          vA.x, vA.y, vA.z,  vC.x, vC.y, vC.z,  vD.x, vD.y, vD.z,
+          vA.x, vA.y, vA.z,  vD.x, vD.y, vD.z,  vB.x, vB.y, vB.z
+        ]), 3));
+        geom.computeVertexNormals();
+
+        scene.add(new THREE.Mesh(geom, matXanh));
+        scene.add(new THREE.LineSegments(new THREE.WireframeGeometry(geom), matVien));
+        scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([vA, vH]), matDuongCao));
+        [vA, vB, vC, vD].forEach(p => taoDiem(scene, p));
+
+      } else if (loai === 'choptugiac') {
+        // 2. KHỐI CHÓP TỨ GIÁC ĐỀU S.ABCD
+        const vS = new THREE.Vector3(0, 0.85, 0);
+        const vA = new THREE.Vector3(-0.4, 0, 0.4);
+        const vB = new THREE.Vector3(0.4, 0, 0.4);
+        const vC = new THREE.Vector3(0.4, 0, -0.4);
+        const vD = new THREE.Vector3(-0.4, 0, -0.4);
+        const vO = new THREE.Vector3(0, 0, 0);
+
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+          vA.x, vA.y, vA.z,  vB.x, vB.y, vB.z,  vC.x, vC.y, vC.z,
+          vA.x, vA.y, vA.z,  vC.x, vC.y, vC.z,  vD.x, vD.y, vD.z,
+          vS.x, vS.y, vS.z,  vA.x, vA.y, vA.z,  vB.x, vB.y, vB.z,
+          vS.x, vS.y, vS.z,  vB.x, vB.y, vB.z,  vC.x, vC.y, vC.z,
+          vS.x, vS.y, vS.z,  vC.x, vC.y, vC.z,  vD.x, vD.y, vD.z,
+          vS.x, vS.y, vS.z,  vD.x, vD.y, vD.z,  vA.x, vA.y, vA.z
+        ]), 3));
+        geom.computeVertexNormals();
+
+        scene.add(new THREE.Mesh(geom, matXanh));
+        scene.add(new THREE.LineSegments(new THREE.WireframeGeometry(geom), matVien));
+        scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([vS, vO]), matDuongCao));
+        [vS, vA, vB, vC, vD].forEach(p => taoDiem(scene, p));
+
+      } else if (loai === 'lapphuong') {
+        // 3. KHỐI LẬP PHƯƠNG ABCD.A'B'C'D'
+        const boxGeom = new THREE.BoxGeometry(0.7, 0.7, 0.7);
+        boxGeom.translate(0, 0.35, 0);
+        scene.add(new THREE.Mesh(boxGeom, matXanh));
+        scene.add(new THREE.LineSegments(new THREE.WireframeGeometry(boxGeom), matVien));
+
+        // 8 đỉnh khối lập phương
+        const half = 0.35;
+        for (let x of [-half, half]) {
+          for (let y of [0, 0.7]) {
+            for (let z of [-half, half]) {
+              taoDiem(scene, new THREE.Vector3(x, y, z));
+            }
+          }
+        }
+
+      } else if (loai === 'non') {
+        // 4. KHỐI NÓN TRÒN XOAY
+        const coneGeom = new THREE.ConeGeometry(0.45, 0.8, 32);
+        coneGeom.translate(0, 0.4, 0);
+        scene.add(new THREE.Mesh(coneGeom, matXanh));
+        scene.add(new THREE.LineSegments(new THREE.WireframeGeometry(coneGeom), matVien));
+        
+        // Trục đường cao từ đỉnh xuống tâm đáy
+        scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0.8, 0), new THREE.Vector3(0, 0, 0)]), matDuongCao));
+        // Đỉnh nón
+        taoDiem(scene, new THREE.Vector3(0, 0.8, 0));
+      }
+
+      // Đóng gói sang định dạng GLB để nạp trực tiếp vào model-viewer
+      exporter.parse(scene, function (gltf) {
+        const blob = new Blob([gltf], { type: 'model/gltf-binary' });
+        viewer.src = URL.createObjectURL(blob);
+      }, { binary: true });
+    }
+
+    function chuyenHinh(loai, btn) {
+      document.querySelectorAll('.btn-hinh').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      taoHinh(loai);
+    }
+
+    // Nạp mặc định khối Tứ diện đều khi mở trang
+    taoHinh('tudien');
   </script>
 </body>
 </html>
