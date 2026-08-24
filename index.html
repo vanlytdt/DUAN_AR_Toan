@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="UTF-8">
 			<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-				<title>AR Toán Học - Ứng Dụng Tích Phân Tính Diện Tích</title>
+				<title>AR Khối Tứ Diện Đều</title>
 				<script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
 				<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 				<style>
@@ -33,14 +33,14 @@
 			<body>
 				
 				<div id="lop-kich-hoat">
-					<h2 style="margin: 0; font-size: 20px; color: #38bdf8;">AR TOÁN HỌC 12</h2>
-					<p style="color: #94a3b8; font-size: 14px; margin-top: 8px;">Mô phỏng Diện tích hình phẳng bằng Tích phân</p>
+					<h2 style="margin: 0; font-size: 20px; color: #38bdf8;">HÌNH HỌC KHÔNG GIAN 12</h2>
+					<p style="color: #94a3b8; font-size: 14px; margin-top: 8px;">Quan sát Khối Tứ Diện Đều trong không gian AR</p>
 					<button id="btn-kich-hoat" onclick="moKhoaTraiNghiem()">BẮT ĐẦU QUAN SÁT</button>
 				</div>
 				
 				<div id="bang-thong-bao">
-					<div id="tieu-de">f(x) = -x² + 4 (x ∈ [-2; 2])</div>
-					<div id="noi-dung">Đang dựng các dải hình chữ nhật xấp xỉ diện tích...</div>
+					<div id="tieu-de">Khối Tứ Diện Đều A.BCD</div>
+					<div id="noi-dung">Hãy di chuyển và xoay điện thoại xung quanh để ngắm các mặt</div>
 				</div>
 				
 				<a-scene 
@@ -55,16 +55,14 @@
 					
 					<a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 					
-					<!-- Thẻ 0: Đồ thị Parabol -->
-					<a-entity id="the-dothi" mindar-image-target="targetIndex: 0">
+					<!-- Neo mô hình trực tiếp lên thẻ nhận diện -->
+					<a-entity mindar-image-target="targetIndex: 0">
 						
-						<!-- Cụm chứa các cột hình chữ nhật 3D tổng Riemann -->
-						<!-- Đặt vị trí khớp với tâm gốc tọa độ trên thẻ -->
-						<a-entity id="khung-chua-riemann" position="0 -0.22 0.02"></a-entity>
+						<!-- Cụm khối tứ diện đều dựng bằng Three.js -->
+						<a-entity id="khoi-tu-dien" position="0 0.2 0" scale="0.5 0.5 0.5"></a-entity>
 						
-						<!-- Nhãn hiển thị số lượng dải chữ nhật và diện tích xấp xỉ -->
-						<a-text id="nhan-thong-so" value="" position="0 0.55 0" align="center" scale="0.55 0.55 0.55" color="#38bdf8"></a-text>
-						<a-text value="S = 32/3 ≈ 10,67" position="0 -0.42 0" align="center" scale="0.5 0.5 0.5" color="#fbbf24"></a-text>
+						<!-- Nhãn ghi chú cố định phía trên -->
+						<a-text value="Tu dien deu: 4 mat tam giac deu" position="0 0.65 0" align="center" scale="0.55 0.55 0.55" color="#fbbf24"></a-text>
 						
 					</a-entity>
 				</a-scene>
@@ -84,17 +82,7 @@
 					document.getElementById('lop-kich-hoat').style.display = 'none';
 					if ('speechSynthesis' in window) {
 					window.speechSynthesis.cancel();
-					const amThanhMoDau = new SpeechSynthesisUtterance('');
-					window.speechSynthesis.speak(amThanhMoDau);
-					layGiongDoc();
-					}
-					phatGiongNoi("Khi số lượng hình chữ nhật tiến tới vô cùng, tổng diện tích các hình chữ nhật chính là tích phân từ âm 2 đến 2 của hàm số.");
-					}
-					
-					function phatGiongNoi(cauNoi) {
-					if ('speechSynthesis' in window) {
-					window.speechSynthesis.cancel();
-					const msg = new SpeechSynthesisUtterance(cauNoi);
+					const msg = new SpeechSynthesisUtterance('Khối tứ diện đều có bốn mặt là các tam giác đều bằng nhau. Hãy xoay điện thoại để quan sát các góc cạnh.');
 					msg.lang = 'vi-VN';
 					if (giongNoiChuan) msg.voice = giongNoiChuan;
 					msg.rate = 0.95;
@@ -102,65 +90,84 @@
 					}
 					}
 					
-					const khungChua = document.querySelector('#khung-chua-riemann');
-					const nhanThongSo = document.querySelector('#nhan-thong-so');
-					const tieuDe = document.querySelector('#tieu-de');
-					const noiDung = document.querySelector('#noi-dung');
+					// Dựng mô hình tứ diện đều chính xác bằng tọa độ không gian Three.js
+					const container = document.querySelector('#khoi-tu-dien');
 					
-					function f(x) {
-					return -x * x + 4;
-					}
+					// Tọa độ 4 đỉnh chuẩn của tứ diện đều
+					const vA = new THREE.Vector3(0, 0.816, 0);          // Đỉnh A
+					const vB = new THREE.Vector3(0, 0, 0.577);          // Đỉnh B
+					const vC = new THREE.Vector3(-0.5, 0, -0.289);      // Đỉnh C
+					const vD = new THREE.Vector3(0.5, 0, -0.289);       // Đỉnh D
+					const vH = new THREE.Vector3(0, 0, 0);              // Trọng tâm đáy H
 					
-					const a = -2;
-					const b = 2;
-					const tiLeX = 0.18; // Tỉ lệ co giãn tọa độ hiển thị trong AR
-					const tiLeY = 0.12;
+					// 1. Tạo hình khối đa diện chứa 4 mặt bán trong suốt
+					const geometry = new THREE.BufferGeometry();
+					const vertices = new Float32Array([
+					// Mặt BCD (Đáy)
+					vB.x, vB.y, vB.z,   vC.x, vC.y, vC.z,   vD.x, vD.y, vD.z,
+					// Mặt ABC
+					vA.x, vA.y, vA.z,   vB.x, vB.y, vB.z,   vC.x, vC.y, vC.z,
+					// Mặt ACD
+					vA.x, vA.y, vA.z,   vC.x, vC.y, vC.z,   vD.x, vD.y, vD.z,
+					// Mặt ADB
+					vA.x, vA.y, vA.z,   vD.x, vD.y, vD.z,   vB.x, vB.y, vB.z
+					]);
+					geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+					geometry.computeVertexNormals();
 					
-					function capNhatRiemann(soLuongN) {
-					khungChua.innerHTML = '';
-					const dx = (b - a) / soLuongN;
-					let tongDienTich = 0;
+					const mesh = new THREE.Mesh(
+					geometry,
+					new THREE.MeshStandardMaterial({
+					color: 0x38bdf8,
+					opacity: 0.6,
+					transparent: true,
+					side: THREE.DoubleSide,
+					roughness: 0.2
+					})
+					);
 					
-					for (let i = 0; i < soLuongN; i++) {
-					const xMid = a + i * dx + dx / 2;
-					const yVal = f(xMid);
-					tongDienTich += yVal * dx;
+					// 2. Tạo khung viền (Wireframe) cho 6 cạnh sắc nét
+					const wireframe = new THREE.LineSegments(
+					new THREE.WireframeGeometry(geometry),
+					new THREE.LineBasicMaterial({ color: 0x0284c7, linewidth: 2 })
+					);
 					
-					const w = dx * tiLeX * 0.92;
-					const h = yVal * tiLeY;
-					const posX = xMid * tiLeX;
-					const posY = h / 2;
+					// 3. Đường cao AH (Nét màu đỏ)
+					const lineAHGeom = new THREE.BufferGeometry().setFromPoints([vA, vH]);
+					const lineAH = new THREE.Line(
+					lineAHGeom,
+					new THREE.LineBasicMaterial({ color: 0xef4444, linewidth: 3 })
+					);
 					
-					const box = document.createElement('a-box');
-					box.setAttribute('width', w);
-					box.setAttribute('height', h);
-					box.setAttribute('depth', 0.04);
-					box.setAttribute('position', `${posX} ${posY} 0`);
-					box.setAttribute('material', 'color: #f59e0b; shader: flat; opacity: 0.82; transparent: true');
+					// Ghép vào không gian A-Frame
+					const group = new THREE.Group();
+					group.add(mesh);
+					group.add(wireframe);
+					group.add(lineAH);
+					container.setObject3D('mesh', group);
 					
-					khungChua.appendChild(box);
-					}
+					// Thêm các điểm đỉnh phát sáng A, B, C, D
+					const taoDiem = (pos, ten) => {
+					const sp = document.createElement('a-sphere');
+					sp.setAttribute('radius', '0.04');
+					sp.setAttribute('color', '#dc2626');
+					sp.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
 					
-					const sThucTe = (32 / 3).toFixed(2).replace('.', ',');
-					const sXapXi = tongDienTich.toFixed(2).replace('.', ',');
-					nhanThongSo.setAttribute('value', `So dai chia: n = ${soLuongN}\nTong S ≈ ${sXapXi}`);
-					noiDung.innerText = `n = ${soLuongN} dải hình chữ nhật | S xấp xỉ = ${sXapXi} (S chính xác = ${sThucTe})`;
-					}
+					const txt = document.createElement('a-text');
+					txt.setAttribute('value', ten);
+					txt.setAttribute('position', `${pos.x} ${pos.y + 0.08} ${pos.z}`);
+					txt.setAttribute('scale', '0.6 0.6 0.6');
+					txt.setAttribute('color', '#ffffff');
+					txt.setAttribute('align', 'center');
 					
-					// Tự động tăng số dải chữ nhật từ 4 đến 40 để học sinh quan sát giới hạn
-					let nHienTai = 4;
-					let chieuTang = true;
+					container.appendChild(sp);
+					container.appendChild(txt);
+					};
 					
-					setInterval(() => {
-					capNhatRiemann(nHienTai);
-					if (chieuTang) {
-					nHienTai += 2;
-					if (nHienTai >= 36) chieuTang = false;
-					} else {
-					nHienTai -= 2;
-					if (nHienTai <= 4) chieuTang = true;
-					}
-					}, 700);
+					taoDiem(vA, 'A');
+					taoDiem(vB, 'B');
+					taoDiem(vC, 'C');
+					taoDiem(vD, 'D');
 				</script>
 			</body>
 		</html>
