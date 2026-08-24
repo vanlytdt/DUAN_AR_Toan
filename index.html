@@ -1,381 +1,174 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mô Phỏng Hình Học Không Gian 3D - 11 Khối Chuẩn</title>
-  <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: #0f172a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    #canvas-3d { width: 100%; height: 100%; display: block; outline: none; }
-    
-    /* Menu cuộn ngang phía trên */
-    #menu-chon {
-      position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
-      display: flex; gap: 8px; z-index: 100; width: 95%; max-width: 960px;
-      overflow-x: auto; padding: 8px; background: rgba(15, 23, 42, 0.92);
-      border-radius: 25px; border: 1px solid rgba(255,255,255,0.15);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-      -webkit-overflow-scrolling: touch;
-      backdrop-filter: blur(8px);
-    }
-    #menu-chon::-webkit-scrollbar { height: 4px; }
-    #menu-chon::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); border-radius: 10px; }
-    
-    .btn-hinh {
-      padding: 8px 16px; font-size: 13px; font-weight: 600; color: #94a3b8;
-      background: transparent; border: none; border-radius: 20px; cursor: pointer;
-      white-space: nowrap; transition: all 0.25s ease; flex-shrink: 0;
-    }
-    .btn-hinh:hover { color: #f8fafc; background: rgba(255,255,255,0.08); }
-    .btn-hinh.active { background: #38bdf8; color: #0f172a; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
-
-    /* Hướng dẫn thao tác góc dưới */
-    #huong-dan {
-      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-      color: #64748b; font-size: 12px; font-weight: 500; letter-spacing: 0.5px;
-      background: rgba(15, 23, 42, 0.7); padding: 6px 16px; border-radius: 20px;
-      border: 1px solid rgba(255,255,255,0.08); pointer-events: none;
-    }
-  </style>
-</head>
-<body>
-
-  <!-- Menu chọn 11 khối hình -->
-  <div id="menu-chon">
-    <button class="btn-hinh active" onclick="chuyenHinh('tudien', this)">Tứ diện đều</button>
-    <button class="btn-hinh" onclick="chuyenHinh('choptugiac', this)">Chóp tứ giác đều</button>
-    <button class="btn-hinh" onclick="chuyenHinh('langtru', this)">Lăng trụ tam giác</button>
-    <button class="btn-hinh" onclick="chuyenHinh('tru', this)">Hình trụ</button>
-    <button class="btn-hinh" onclick="chuyenHinh('matcau', this)">Mặt cầu</button>
-    <button class="btn-hinh" onclick="chuyenHinh('lapphuong', this)">Hình lập phương</button>
-    <button class="btn-hinh" onclick="chuyenHinh('hopchunhat', this)">Hình hộp chữ nhật</button>
-    <button class="btn-hinh" onclick="chuyenHinh('non', this)">Hình nón</button>
-    <button class="btn-hinh" onclick="chuyenHinh('batdien', this)">Bát diện đều</button>
-    <button class="btn-hinh" onclick="chuyenHinh('muoihimat', this)">12 mặt đều</button>
-    <button class="btn-hinh" onclick="chuyenHinh('haimuoimat', this)">20 mặt đều</button>
-  </div>
-
-  <div id="huong-dan">🖱️ Giữ chuột trái để xoay • Cuộn chuột để phóng to/thu nhỏ</div>
-
-  <!-- Canvas hiển thị 3D -->
-  <canvas id="canvas-3d"></canvas>
-
-  <!-- Thư viện Three.js & OrbitControls -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-
-  <script>
-    // 1. Cấu hình Three.js Scene, Camera, Renderer
-    const canvas = document.getElementById('canvas-3d');
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0f172a);
-
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.set(2.2, 1.8, 2.5);
-
-    const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 1.2;
-
-    // 2. Hệ thống chiếu sáng
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-    scene.add(ambientLight);
-
-    const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight1.position.set(5, 10, 7);
-    scene.add(dirLight1);
-
-    const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 0.3);
-    dirLight2.position.set(-5, -5, -5);
-    scene.add(dirLight2);
-
-    // 3. Bảng 20 màu riêng biệt cho các mặt
-    const bangMau = [
-      0xf87171, 0x60a5fa, 0x4ade80, 0xfacc15, 0xfb923c,
-      0xc084fc, 0x2dd4bf, 0xf472b6, 0xa78bfa, 0x38bdf8,
-      0xfb7185, 0xa3e635, 0xe879f9, 0x34d399, 0xfde047,
-      0x818cf8, 0xf43f5e, 0x10b981, 0x06b6d4, 0xd946ef
-    ];
-
-    const taoVatLieu = (hexColor, opac = 0.8) => new THREE.MeshStandardMaterial({
-      color: hexColor,
-      opacity: opac,
-      transparent: true,
-      roughness: 0.15,
-      metalness: 0.05,
-      side: THREE.DoubleSide
-    });
-
-    const matVien = new THREE.LineBasicMaterial({ color: 0x0f172a, linewidth: 2 });
-    const matDiem = new THREE.MeshBasicMaterial({ color: 0xdc2626 });
-    const matDuongCao = new THREE.LineBasicMaterial({ color: 0xef4444, linewidth: 3 });
-
-    function taoDiem(group, pos) {
-      const sp = new THREE.Mesh(new THREE.SphereGeometry(0.032, 16, 16), matDiem);
-      sp.position.copy(pos);
-      group.add(sp);
-    }
-
-    function taoMatTamGiac(p1, p2, p3, mat) {
-      const geom = new THREE.BufferGeometry();
-      geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
-        p1.x, p1.y, p1.z,  p2.x, p2.y, p2.z,  p3.x, p3.y, p3.z
-      ]), 3));
-      geom.computeVertexNormals();
-      return new THREE.Mesh(geom, mat);
-    }
-
-    function taoMatTuGiac(p1, p2, p3, p4, mat) {
-      const geom = new THREE.BufferGeometry();
-      geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
-        p1.x, p1.y, p1.z,  p2.x, p2.y, p2.z,  p3.x, p3.y, p3.z,
-        p1.x, p1.y, p1.z,  p3.x, p3.y, p3.z,  p4.x, p4.y, p4.z
-      ]), 3));
-      geom.computeVertexNormals();
-      return new THREE.Mesh(geom, mat);
-    }
-
-    function taoMatNguGiac(p1, p2, p3, p4, p5, mat) {
-      const geom = new THREE.BufferGeometry();
-      geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
-        p1.x, p1.y, p1.z,  p2.x, p2.y, p2.z,  p3.x, p3.y, p3.z,
-        p1.x, p1.y, p1.z,  p3.x, p3.y, p3.z,  p4.x, p4.y, p4.z,
-        p1.x, p1.y, p1.z,  p4.x, p4.y, p4.z,  p5.x, p5.y, p5.z
-      ]), 3));
-      geom.computeVertexNormals();
-      return new THREE.Mesh(geom, mat);
-    }
-
-    // 4. Khởi tạo 11 mô hình
-    const cacMoHinh = {};
-
-    function khoiTaoMoHinh() {
-      // 1. TỨ DIỆN ĐỀU (4 mặt 4 màu)
-      const grTuDien = new THREE.Group();
-      const vA = new THREE.Vector3(0, 0.816, 0), vB = new THREE.Vector3(0, 0, 0.577), vC = new THREE.Vector3(-0.5, 0, -0.289), vD = new THREE.Vector3(0.5, 0, -0.289), vH = new THREE.Vector3(0, 0, 0);
-      grTuDien.add(taoMatTamGiac(vB, vC, vD, taoVatLieu(bangMau[0])));
-      grTuDien.add(taoMatTamGiac(vA, vB, vC, taoVatLieu(bangMau[1])));
-      grTuDien.add(taoMatTamGiac(vA, vC, vD, taoVatLieu(bangMau[2])));
-      grTuDien.add(taoMatTamGiac(vA, vD, vB, taoVatLieu(bangMau[3])));
-      const gTD = new THREE.BufferGeometry().setFromPoints([vB, vC, vD, vA, vB, vD, vC, vA]);
-      grTuDien.add(new THREE.LineSegments(new THREE.WireframeGeometry(gTD), matVien));
-      grTuDien.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([vA, vH]), matDuongCao));
-      [vA, vB, vC, vD].forEach(p => taoDiem(grTuDien, p));
-      cacMoHinh['tudien'] = grTuDien;
-
-      // 2. CHÓP TỨ GIÁC ĐỀU (5 mặt 5 màu)
-      const grChop = new THREE.Group();
-      const vS = new THREE.Vector3(0, 0.85, 0), vA2 = new THREE.Vector3(-0.4, 0, 0.4), vB2 = new THREE.Vector3(0.4, 0, 0.4), vC2 = new THREE.Vector3(0.4, 0, -0.4), vD2 = new THREE.Vector3(-0.4, 0, -0.4), vO = new THREE.Vector3(0, 0, 0);
-      grChop.add(taoMatTuGiac(vA2, vB2, vC2, vD2, taoVatLieu(bangMau[4])));
-      grChop.add(taoMatTamGiac(vS, vA2, vB2, taoVatLieu(bangMau[5])));
-      grChop.add(taoMatTamGiac(vS, vB2, vC2, taoVatLieu(bangMau[6])));
-      grChop.add(taoMatTamGiac(vS, vC2, vD2, taoVatLieu(bangMau[7])));
-      grChop.add(taoMatTamGiac(vS, vD2, vA2, taoVatLieu(bangMau[8])));
-      const gChop = new THREE.BufferGeometry().setFromPoints([vA2, vB2, vC2, vD2, vA2, vS, vB2, vS, vC2, vS, vD2]);
-      grChop.add(new THREE.LineSegments(new THREE.WireframeGeometry(gChop), matVien));
-      grChop.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([vS, vO]), matDuongCao));
-      [vS, vA2, vB2, vC2, vD2].forEach(p => taoDiem(grChop, p));
-      cacMoHinh['choptugiac'] = grChop;
-
-      // 3. LĂNG TRỤ TAM GIÁC (5 mặt 5 màu)
-      const grLT = new THREE.Group();
-      const pA = new THREE.Vector3(-0.35, 0, 0.35), pB = new THREE.Vector3(0.35, 0, 0.35), pC = new THREE.Vector3(0, 0, -0.4);
-      const hLT = 0.75;
-      const pA1 = new THREE.Vector3(-0.35, hLT, 0.35), pB1 = new THREE.Vector3(0.35, hLT, 0.35), pC1 = new THREE.Vector3(0, hLT, -0.4);
-      grLT.add(taoMatTamGiac(pA, pB, pC, taoVatLieu(bangMau[9])));
-      grLT.add(taoMatTamGiac(pA1, pB1, pC1, taoVatLieu(bangMau[10])));
-      grLT.add(taoMatTuGiac(pA, pB, pB1, pA1, taoVatLieu(bangMau[11])));
-      grLT.add(taoMatTuGiac(pB, pC, pC1, pB1, taoVatLieu(bangMau[12])));
-      grLT.add(taoMatTuGiac(pC, pA, pA1, pC1, taoVatLieu(bangMau[13])));
-      const gLT = new THREE.BufferGeometry().setFromPoints([pA,pB,pC,pA, pA1,pB1,pC1,pA1, pB,pB1, pC,pC1]);
-      grLT.add(new THREE.LineSegments(new THREE.WireframeGeometry(gLT), matVien));
-      [pA, pB, pC, pA1, pB1, pC1].forEach(p => taoDiem(grLT, p));
-      cacMoHinh['langtru'] = grLT;
-
-      // 4. HÌNH TRỤ (3 mặt 3 màu)
-      const grTru = new THREE.Group();
-      const cylGeom = new THREE.CylinderGeometry(0.38, 0.38, 0.75, 32, 1, true);
-      cylGeom.translate(0, 0.375, 0);
-      grTru.add(new THREE.Mesh(cylGeom, taoVatLieu(bangMau[14])));
-      grTru.add(new THREE.LineSegments(new THREE.WireframeGeometry(cylGeom), matVien));
-      const dayTruDuoi = new THREE.CircleGeometry(0.38, 32);
-      dayTruDuoi.rotateX(Math.PI / 2);
-      grTru.add(new THREE.Mesh(dayTruDuoi, taoVatLieu(bangMau[15])));
-      const dayTruTren = new THREE.CircleGeometry(0.38, 32);
-      dayTruTren.rotateX(-Math.PI / 2);
-      dayTruTren.translate(0, 0.75, 0);
-      grTru.add(new THREE.Mesh(dayTruTren, taoVatLieu(bangMau[16])));
-      grTru.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0.75, 0), new THREE.Vector3(0, 0, 0)]), matDuongCao));
-      cacMoHinh['tru'] = grTru;
-
-      // 5. MẶT CẦU
-      const grMatCau = new THREE.Group();
-      const sphGeom = new THREE.SphereGeometry(0.45, 32, 32);
-      sphGeom.translate(0, 0.45, 0);
-      grMatCau.add(new THREE.Mesh(sphGeom, taoVatLieu(bangMau[17], 0.6)));
-      grMatCau.add(new THREE.LineSegments(new THREE.WireframeGeometry(sphGeom), matVien));
-      const ringGeom = new THREE.RingGeometry(0.445, 0.455, 64);
-      ringGeom.rotateX(Math.PI / 2);
-      ringGeom.translate(0, 0.45, 0);
-      grMatCau.add(new THREE.Mesh(ringGeom, new THREE.MeshBasicMaterial({ color: 0xef4444, side: THREE.DoubleSide })));
-      taoDiem(grMatCau, new THREE.Vector3(0, 0.45, 0));
-      cacMoHinh['matcau'] = grMatCau;
-
-      // 6. HÌNH LẬP PHƯƠNG (6 mặt 6 màu)
-      const grLapPhuong = new THREE.Group();
-      const matsLP = [0,1,2,3,4,5].map(i => taoVatLieu(bangMau[i]));
-      const boxGeom = new THREE.BoxGeometry(0.65, 0.65, 0.65);
-      boxGeom.translate(0, 0.325, 0);
-      grLapPhuong.add(new THREE.Mesh(boxGeom, matsLP));
-      grLapPhuong.add(new THREE.LineSegments(new THREE.WireframeGeometry(boxGeom), matVien));
-      for (let x of [-0.325, 0.325]) {
-        for (let y of [0, 0.65]) {
-          for (let z of [-0.325, 0.325]) taoDiem(grLapPhuong, new THREE.Vector3(x, y, z));
-        }
-      }
-      cacMoHinh['lapphuong'] = grLapPhuong;
-
-      // 7. HÌNH HỘP CHỮ NHẬT (6 mặt 6 màu)
-      const grHCN = new THREE.Group();
-      const matsHCN = [6,7,8,9,10,11].map(i => taoVatLieu(bangMau[i]));
-      const boxHCNGeom = new THREE.BoxGeometry(0.8, 0.45, 0.55);
-      boxHCNGeom.translate(0, 0.225, 0);
-      grHCN.add(new THREE.Mesh(boxHCNGeom, matsHCN));
-      grHCN.add(new THREE.LineSegments(new THREE.WireframeGeometry(boxHCNGeom), matVien));
-      for (let x of [-0.4, 0.4]) {
-        for (let y of [0, 0.45]) {
-          for (let z of [-0.275, 0.275]) taoDiem(grHCN, new THREE.Vector3(x, y, z));
-        }
-      }
-      cacMoHinh['hopchunhat'] = grHCN;
-
-      // 8. HÌNH NÓN (2 mặt 2 màu)
-      const grNon = new THREE.Group();
-      const coneGeom = new THREE.ConeGeometry(0.45, 0.8, 32, 1, true);
-      coneGeom.translate(0, 0.4, 0);
-      grNon.add(new THREE.Mesh(coneGeom, taoVatLieu(bangMau[12])));
-      grNon.add(new THREE.LineSegments(new THREE.WireframeGeometry(coneGeom), matVien));
-      const circleGeom1 = new THREE.CircleGeometry(0.45, 32);
-      circleGeom1.rotateX(Math.PI / 2);
-      grNon.add(new THREE.Mesh(circleGeom1, taoVatLieu(bangMau[13])));
-      grNon.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0.8, 0), new THREE.Vector3(0, 0, 0)]), matDuongCao));
-      taoDiem(grNon, new THREE.Vector3(0, 0.8, 0));
-      cacMoHinh['non'] = grNon;
-
-      // 9. BÁT DIỆN ĐỀU (8 mặt 8 màu)
-      const grBatDien = new THREE.Group();
-      const rOct = 0.46;
-      const oTop = new THREE.Vector3(0, rOct + 0.46, 0), oBot = new THREE.Vector3(0, -rOct + 0.46, 0);
-      const o1 = new THREE.Vector3(rOct, 0.46, 0), o2 = new THREE.Vector3(0, 0.46, rOct), o3 = new THREE.Vector3(-rOct, 0.46, 0), o4 = new THREE.Vector3(0, 0.46, -rOct);
-      const matBD = [
-        [oTop, o1, o2], [oTop, o2, o3], [oTop, o3, o4], [oTop, o4, o1],
-        [oBot, o2, o1], [oBot, o3, o2], [oBot, o4, o3], [oBot, o1, o4]
-      ];
-      matBD.forEach((pts, i) => {
-        grBatDien.add(taoMatTamGiac(pts[0], pts[1], pts[2], taoVatLieu(bangMau[i % 8])));
-      });
-      const octGeom = new THREE.OctahedronGeometry(rOct);
-      octGeom.translate(0, 0.46, 0);
-      grBatDien.add(new THREE.LineSegments(new THREE.WireframeGeometry(octGeom), matVien));
-      [oTop, oBot, o1, o2, o3, o4].forEach(p => taoDiem(grBatDien, p));
-      cacMoHinh['batdien'] = grBatDien;
-
-      // 10. 12 MẶT ĐỀU (12 mặt 12 màu)
-      const gr12Mat = new THREE.Group();
-      const phi = (1 + Math.sqrt(5)) / 2;
-      const a = 0.26, b = a / phi, c = a * phi;
-      const vDodeca = [
-        new THREE.Vector3(-a, -a, -a), new THREE.Vector3(-a, -a, a), new THREE.Vector3(-a, a, -a), new THREE.Vector3(-a, a, a),
-        new THREE.Vector3(a, -a, -a), new THREE.Vector3(a, -a, a), new THREE.Vector3(a, a, -a), new THREE.Vector3(a, a, a),
-        new THREE.Vector3(0, -b, -c), new THREE.Vector3(0, -b, c), new THREE.Vector3(0, b, -c), new THREE.Vector3(0, b, c),
-        new THREE.Vector3(-b, -c, 0), new THREE.Vector3(-b, c, 0), new THREE.Vector3(b, -c, 0), new THREE.Vector3(b, c, 0),
-        new THREE.Vector3(-c, 0, -b), new THREE.Vector3(-c, 0, b), new THREE.Vector3(c, 0, -b), new THREE.Vector3(c, 0, b)
-      ];
-      vDodeca.forEach(p => p.y += 0.46);
-      const mat12 = [
-        [3, 11, 7, 15, 13], [7, 11, 9, 5, 19], [7, 19, 18, 6, 15],
-        [15, 6, 10, 2, 13], [13, 2, 16, 17, 3], [3, 17, 1, 9, 11],
-        [8, 10, 6, 18, 4],  [9, 1, 12, 14, 5],  [5, 14, 4, 18, 19],
-        [4, 14, 12, 0, 8],  [10, 8, 0, 16, 2],  [12, 1, 17, 16, 0]
-      ];
-      mat12.forEach((face, i) => {
-        gr12Mat.add(taoMatNguGiac(vDodeca[face[0]], vDodeca[face[1]], vDodeca[face[2]], vDodeca[face[3]], vDodeca[face[4]], taoVatLieu(bangMau[i])));
-      });
-      const dodGeom = new THREE.DodecahedronGeometry(0.44);
-      dodGeom.translate(0, 0.46, 0);
-      gr12Mat.add(new THREE.LineSegments(new THREE.WireframeGeometry(dodGeom), matVien));
-      vDodeca.forEach(p => taoDiem(gr12Mat, p));
-      cacMoHinh['muoihimat'] = gr12Mat;
-
-      // 11. 20 MẶT ĐỀU (20 mặt 20 màu)
-      const gr20Mat = new THREE.Group();
-      const rIco = 0.45;
-      const tIco = (1 + Math.sqrt(5)) / 2 * (rIco / Math.sqrt(1 + ((1 + Math.sqrt(5))/2)*((1 + Math.sqrt(5))/2)));
-      const sIco = (rIco / Math.sqrt(1 + ((1 + Math.sqrt(5))/2)*((1 + Math.sqrt(5))/2)));
-      const vIco = [
-        new THREE.Vector3(-sIco,  tIco,  0), new THREE.Vector3( sIco,  tIco,  0), new THREE.Vector3(-sIco, -tIco,  0), new THREE.Vector3( sIco, -tIco,  0),
-        new THREE.Vector3( 0, -sIco,  tIco), new THREE.Vector3( 0,  sIco,  tIco), new THREE.Vector3( 0, -sIco, -tIco), new THREE.Vector3( 0,  sIco, -tIco),
-        new THREE.Vector3( tIco,  0, -sIco), new THREE.Vector3( tIco,  0,  sIco), new THREE.Vector3(-tIco,  0, -sIco), new THREE.Vector3(-tIco,  0,  sIco)
-      ];
-      vIco.forEach(p => p.y += 0.46);
-      const faces20 = [
-        [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
-        [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
-        [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
-        [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]
-      ];
-      faces20.forEach((f, i) => {
-        gr20Mat.add(taoMatTamGiac(vIco[f[0]], vIco[f[1]], vIco[f[2]], taoVatLieu(bangMau[i])));
-      });
-      const icoGeom = new THREE.IcosahedronGeometry(rIco);
-      icoGeom.translate(0, 0.46, 0);
-      gr20Mat.add(new THREE.LineSegments(new THREE.WireframeGeometry(icoGeom), matVien));
-      vIco.forEach(p => taoDiem(gr20Mat, p));
-      cacMoHinh['haimuoimat'] = gr20Mat;
-
-      // Thêm mô hình mặc định (tứ diện) vào scene
-      scene.add(cacMoHinh['tudien']);
-    }
-
-    let moHinhHienTai = 'tudien';
-
-    // 5. Hàm chuyển đổi mô hình
-    window.chuyenHinh = function(loai, btn) {
-      document.querySelectorAll('.btn-hinh').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-
-      if (cacMoHinh[moHinhHienTai]) {
-        scene.remove(cacMoHinh[moHinhHienTai]);
-      }
-      if (cacMoHinh[loai]) {
-        scene.add(cacMoHinh[loai]);
-        moHinhHienTai = loai;
-      }
-    };
-
-    // 6. Vòng lặp render & responsive
-    function animate() {
-      requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
-    }
-
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-
-    // Chạy khởi tạo
-    khoiTaoMoHinh();
-    animate();
-  </script>
-</body>
-</html>
+	<head>
+		<meta charset="UTF-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+				<title>AR Khối Tứ Diện Đều</title>
+				<script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+				<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+				<style>
+					body { margin: 0; overflow: hidden; font-family: sans-serif; }
+					#bang-thong-bao {
+					position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
+					background: rgba(15, 23, 42, 0.92); color: white; padding: 12px 20px;
+					border-radius: 12px; text-align: center; z-index: 9999; font-size: 14px;
+					width: 85%; max-width: 380px; box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+					border: 1px solid rgba(255,255,255,0.15);
+					}
+					#tieu-de { font-weight: bold; color: #38bdf8; font-size: 16px; margin-bottom: 4px; }
+					
+					#lop-kich-hoat {
+					position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+					background: rgba(15, 23, 42, 0.96); z-index: 99999; display: flex;
+					flex-direction: column; justify-content: center; align-items: center; color: white;
+					}
+					#btn-kich-hoat {
+					padding: 14px 28px; font-size: 16px; font-weight: bold;
+					background: #38bdf8; color: #0f172a; border: none;
+					border-radius: 30px; cursor: pointer; margin-top: 15px;
+					box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4);
+					}
+				</style>
+			</head>
+			<body>
+				
+				<div id="lop-kich-hoat">
+					<h2 style="margin: 0; font-size: 20px; color: #38bdf8;">HÌNH HỌC KHÔNG GIAN 12</h2>
+					<p style="color: #94a3b8; font-size: 14px; margin-top: 8px;">Quan sát Khối Tứ Diện Đều A.BCD</p>
+					<button id="btn-kich-hoat" onclick="moKhoaTraiNghiem()">BẮT ĐẦU QUAN SÁT</button>
+				</div>
+				
+				<div id="bang-thong-bao">
+					<div id="tieu-de">Khối Tứ Diện Đều A.BCD</div>
+					<div id="noi-dung">Hãy hướng camera vào thẻ và xoay quanh để ngắm các mặt</div>
+				</div>
+				
+				<a-scene 
+					mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 5; missTolerance: 8;" 
+					color-space="sRGB" 
+					renderer="colorManagement: true, physicallyCorrectLights" 
+					vr-mode-ui="enabled: false" 
+					device-orientation-permission-ui="enabled: false">
+					
+					<!-- Ánh sáng chiếu sáng toàn diện -->
+					<a-light type="ambient" color="#ffffff" intensity="1.5"></a-light>
+					<a-light type="directional" color="#ffffff" intensity="1.0" position="1 3 2"></a-light>
+					
+					<a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+					
+					<!-- Thẻ nhận diện mục tiêu -->
+					<a-entity id="target-card" mindar-image-target="targetIndex: 0">
+						
+						<!-- Cụm khối tứ diện đều: Tăng kích thước lên gấp 3 (scale 1.5) -->
+						<a-entity id="khoi-tu-dien" position="0 0.25 0" scale="1.5 1.5 1.5"></a-entity>
+						
+						<!-- Nhãn tiêu đề nổi phía trên khối hình -->
+						<a-text value="Tu dien deu A.BCD" position="0 1.6 0" align="center" scale="0.7 0.7 0.7" color="#fbbf24"></a-text>
+						
+					</a-entity>
+				</a-scene>
+				
+				<script>
+					let giongNoiChuan = null;
+					
+					function layGiongDoc() {
+					if ('speechSynthesis' in window) {
+					const voices = window.speechSynthesis.getVoices();
+					giongNoiChuan = voices.find(v => v.lang.includes('vi')) || null;
+					}
+					}
+					if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = layGiongDoc;
+					
+					function moKhoaTraiNghiem() {
+					document.getElementById('lop-kich-hoat').style.display = 'none';
+					if ('speechSynthesis' in window) {
+					window.speechSynthesis.cancel();
+					const msg = new SpeechSynthesisUtterance('Khối tứ diện đều có bốn mặt là các tam giác đều bằng nhau. Hãy xoay điện thoại để quan sát.');
+					msg.lang = 'vi-VN';
+					if (giongNoiChuan) msg.voice = giongNoiChuan;
+					msg.rate = 0.95;
+					window.speechSynthesis.speak(msg);
+					}
+					}
+					
+					const container = document.querySelector('#khoi-tu-dien');
+					
+					// Tọa độ 4 đỉnh chuẩn của tứ diện đều
+					const vA = new THREE.Vector3(0, 0.816, 0);          // Đỉnh A
+					const vB = new THREE.Vector3(0, 0, 0.577);          // Đỉnh B
+					const vC = new THREE.Vector3(-0.5, 0, -0.289);      // Đỉnh C
+					const vD = new THREE.Vector3(0.5, 0, -0.289);       // Đỉnh D
+					const vH = new THREE.Vector3(0, 0, 0);              // Trọng tâm đáy H
+					
+					// 1. Tạo 4 mặt đa diện với màu xanh lam trong suốt
+					const geometry = new THREE.BufferGeometry();
+					const vertices = new Float32Array([
+					// Mặt BCD (Đáy)
+					vB.x, vB.y, vB.z,   vC.x, vC.y, vC.z,   vD.x, vD.y, vD.z,
+					// Mặt ABC
+					vA.x, vA.y, vA.z,   vB.x, vB.y, vB.z,   vC.x, vC.y, vC.z,
+					// Mặt ACD
+					vA.x, vA.y, vA.z,   vC.x, vC.y, vC.z,   vD.x, vD.y, vD.z,
+					// Mặt ADB
+					vA.x, vA.y, vA.z,   vD.x, vD.y, vD.z,   vB.x, vB.y, vB.z
+					]);
+					geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+					geometry.computeVertexNormals();
+					
+					const mesh = new THREE.Mesh(
+					geometry,
+					new THREE.MeshStandardMaterial({
+					color: 0x38bdf8,
+					opacity: 0.65,
+					transparent: true,
+					side: THREE.DoubleSide,
+					roughness: 0.1,
+					metalness: 0.2
+					})
+					);
+					
+					// 2. Tạo khung viền các cạnh sắc nét
+					const wireframe = new THREE.LineSegments(
+					new THREE.WireframeGeometry(geometry),
+					new THREE.LineBasicMaterial({ color: 0x0284c7, linewidth: 3 })
+					);
+					
+					// 3. Đường cao AH (Màu đỏ đâm xuống tâm đáy)
+					const lineAHGeom = new THREE.BufferGeometry().setFromPoints([vA, vH]);
+					const lineAH = new THREE.Line(
+					lineAHGeom,
+					new THREE.LineBasicMaterial({ color: 0xef4444, linewidth: 3 })
+					);
+					
+					const group = new THREE.Group();
+					group.add(mesh);
+					group.add(wireframe);
+					group.add(lineAH);
+					container.setObject3D('mesh', group);
+					
+					// Đặt các điểm đỉnh A, B, C, D to rõ
+					const taoDiem = (pos, ten, offset) => {
+					const sp = document.createElement('a-sphere');
+					sp.setAttribute('radius', '0.035');
+					sp.setAttribute('color', '#dc2626');
+					sp.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
+					
+					const txt = document.createElement('a-text');
+					txt.setAttribute('value', ten);
+					txt.setAttribute('position', `${pos.x + offset.x} ${pos.y + offset.y} ${pos.z + offset.z}`);
+					txt.setAttribute('scale', '0.5 0.5 0.5');
+					txt.setAttribute('color', '#ffffff');
+					txt.setAttribute('align', 'center');
+					
+					container.appendChild(sp);
+					container.appendChild(txt);
+					};
+					
+					taoDiem(vA, 'A', {x: 0, y: 0.08, z: 0});
+					taoDiem(vB, 'B', {x: 0, y: -0.06, z: 0.06});
+					taoDiem(vC, 'C', {x: -0.06, y: -0.06, z: 0});
+					taoDiem(vD, 'D', {x: 0.06, y: -0.06, z: 0});
+					taoDiem(vH, 'H (Tam day)', {x: 0, y: -0.06, z: -0.06});
+				</script>
+			</body>
+		</html>
