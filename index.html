@@ -47,7 +47,7 @@
     #ar-button {
       position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
       background: #fbbf24; color: #0f172a; border: none; border-radius: 30px;
-      padding: 14px 28px; font-size: 15px; font-weight: bold; cursor: pointer;
+      padding: 14px 28px; font-size: 15px; min-height: 50px; font-weight: bold; cursor: pointer;
       box-shadow: 0 4px 15px rgba(251, 191, 36, 0.4); z-index: 100;
     }
   </style>
@@ -83,7 +83,7 @@
     shadow-intensity="1"
     exposure="1.2">
     
-    <button slot="ar-button" id="ar-button">
+    <button slot="ar-button" id="ar-button" type="button">
       📷 XEM TRONG KHÔNG GIAN THỰC (AR)
     </button>
   </model-viewer>
@@ -336,17 +336,86 @@
         { id: 'haimuoimat', scene: sc11 }
       ];
 
-      // Export tuần tự 11 mô hình để giảm lỗi do tạo GLB đồng thời.
-    // Quick Look trên iPhone sẽ được model-viewer tự tạo USDZ khi cần.
-    async function xuatMoHinhAnToan(item) {
+      // =========================
+    // AR + 3D MOBILE HANDLER
+    // =========================
+
+    const statusBox = document.getElementById('trang-thai');
+    const errorBox = document.getElementById('loi-ar');
+
+    function hienThiTrangThai(text, fade = false) {
+      statusBox.textContent = text;
+      statusBox.style.opacity = '1';
+      if (fade) setTimeout(() => statusBox.style.opacity = '0', 1800);
+    }
+
+    function hienThiLoi(text) {
+      errorBox.textContent = text;
+      errorBox.style.display = 'block';
+      setTimeout(() => errorBox.style.display = 'none', 6500);
+    }
+
+    function laIOS() {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+             (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    }
+
+    function laAndroid() {
+      return /Android/i.test(navigator.userAgent);
+    }
+
+    function moAR() {
+      // model-viewer handles:
+      // Android -> WebXR / Scene Viewer
+      // iPhone/iPad -> Quick Look
+      if (!viewer.src) {
+        hienThiLoi('Mô hình chưa sẵn sàng. Vui lòng chờ vài giây.');
+        return;
+      }
+
+      if (!window.isSecureContext && location.protocol !== 'file:') {
+        hienThiLoi('AR trên trình duyệt cần HTTPS. Hãy mở trang bằng địa chỉ https://…');
+        return;
+      }
+
+      if (laIOS()) {
+        hienThiTrangThai('Đang mở AR Quick Look trên iPhone/iPad…');
+      } else if (laAndroid()) {
+        hienThiTrangThai('Đang mở AR trên Android…');
+      } else {
+        hienThiTrangThai('Đang thử chế độ AR tương thích…');
+      }
+
+      // invokeAR() is the official model-viewer programmatic AR entry point.
+      if (typeof viewer.activateAR === 'function') {
+        viewer.activateAR().catch((err) => {
+          console.error('activateAR failed:', err);
+          hienThiLoi('Thiết bị/trình duyệt này không thể mở AR. Hãy thử Safari trên iPhone hoặc Chrome trên Android.');
+        });
+      } else {
+        // Fallback: let the native model-viewer button perform activation.
+        document.getElementById('ar-button').click();
+      }
+    }
+
+    // Cho phép gọi AR bằng nút tùy chỉnh nếu cần.
+    document.getElementById('ar-button').addEventListener('click', () => {
+      // Không gọi lại activateAR ở đây vì đây chính là nút mà model-viewer
+      // dùng để kích hoạt AR. Chỉ cập nhật thông báo.
+      if (laIOS()) hienThiTrangThai('Đang mở AR Quick Look…');
+      else if (laAndroid()) hienThiTrangThai('Đang mở AR trên Android…');
+    });
+
+    function xuatMoHinhAnToan(item) {
       return new Promise((resolve, reject) => {
         exporter.parse(
           item.scene,
           (gltf) => {
             try {
               const blob = new Blob([gltf], { type: 'model/gltf-binary' });
-              cacMoHinh[item.id] = URL.createObjectURL(blob);
-              resolve(cacMoHinh[item.id]);
+              const url = URL.createObjectURL(blob);
+              cacMoHinh[item.id] = url;
+              resolve(url);
             } catch (e) {
               reject(e);
             }
@@ -363,43 +432,56 @@
     }
 
     async function khoiTaoBoMoHinh() {
-      const status = document.getElementById('trang-thai');
-
       for (let i = 0; i < danhSach.length; i++) {
         const item = danhSach[i];
-        status.textContent = `Đang tạo mô hình ${i + 1}/${danhSach.length}: ${item.id}…`;
+        hienThiTrangThai(`Đang chuẩn bị mô hình ${i + 1}/${danhSach.length}…`);
 
         try {
           await xuatMoHinhAnToan(item);
         } catch (err) {
-          console.error(`Lỗi xuất mô hình ${item.id}:`, err);
+          console.error(`Lỗi xuất ${item.id}:`, err);
         }
       }
 
-      if (cacMoHinh.tudien) {
-        viewer.src = cacMoHinh.tudien;
-        viewer.dataset.currentModel = 'tudien';
-        status.textContent = 'Sẵn sàng: xoay/phóng to hoặc bấm nút AR.';
-        setTimeout(() => status.style.opacity = '0', 1800);
-      } else {
-        status.textContent = 'Không tạo được mô hình 3D. Hãy mở Console để xem lỗi.';
+      if (!cacMoHinh.tudien) {
+        hienThiLoi('Không tạo được mô hình 3D.');
+        return;
       }
+
+      viewer.src = cacMoHinh.tudien;
+      viewer.dataset.currentModel = 'tudien';
+      hienThiTrangThai('Sẵn sàng: 3D + AR.', true);
     }
 
-    // Hiển thị lỗi AR thay vì để nút bấm "không phản hồi".
-    viewer.addEventListener('ar-status', (event) => {
-      const box = document.getElementById('loi-ar');
+    // Chỉ hiển thị nút AR khi model-viewer xác nhận AR khả dụng.
+    viewer.addEventListener('load', () => {
+      const arButton = document.getElementById('ar-button');
 
-      if (event.detail.status === 'failed') {
-        box.textContent =
-          'Không thể khởi động AR. Hãy dùng Chrome Android hoặc Safari iPhone và mở trang bằng HTTPS.';
-        box.style.display = 'block';
-        setTimeout(() => box.style.display = 'none', 5000);
+      // Không ẩn vĩnh viễn: model-viewer có thể cần thời gian phát hiện capability.
+      if (viewer.canActivateAR) {
+        arButton.style.display = 'block';
       }
+    });
+
+    viewer.addEventListener('ar-status', (event) => {
+      console.log('AR status:', event.detail.status);
 
       if (event.detail.status === 'session-started') {
-        box.style.display = 'none';
+        errorBox.style.display = 'none';
       }
+
+      if (event.detail.status === 'failed') {
+        hienThiLoi(
+          laIOS()
+            ? 'iPhone/iPad không mở được AR Quick Look. Hãy dùng Safari và kiểm tra rằng trang đang chạy bằng HTTPS.'
+            : 'Android không mở được AR. Hãy dùng Chrome/Google Scene Viewer và kiểm tra rằng trang đang chạy bằng HTTPS.'
+        );
+      }
+    });
+
+    viewer.addEventListener('error', (event) => {
+      console.error('model-viewer error:', event);
+      hienThiLoi('Không tải được mô hình 3D/AR. Hãy kiểm tra kết nối mạng và Console.');
     });
 
     window.chonMoHinh = function(loai, btn) {
@@ -407,19 +489,13 @@
       btn.classList.add('active');
 
       if (!cacMoHinh[loai]) {
-        const status = document.getElementById('trang-thai');
-        status.textContent = 'Mô hình đang được chuẩn bị, vui lòng chờ…';
-        status.style.opacity = '1';
+        hienThiTrangThai('Mô hình đang được chuẩn bị, vui lòng chờ…');
         return;
       }
 
       viewer.dataset.currentModel = loai;
       viewer.src = cacMoHinh[loai];
-
-      const status = document.getElementById('trang-thai');
-      status.textContent = `Đã chọn: ${btn.textContent}`;
-      status.style.opacity = '1';
-      setTimeout(() => status.style.opacity = '0', 1400);
+      hienThiTrangThai(`Đã chọn: ${btn.textContent}`, true);
     };
 
     window.addEventListener('beforeunload', () => {
