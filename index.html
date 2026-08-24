@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AR Phòng Học Hình Học Không Gian 12</title>
   <!-- Nạp model-viewer chính thức từ Google -->
-  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.3.1/model-viewer.min.js"></script>
   <style>
     body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: #0f172a; font-family: sans-serif; }
     model-viewer { width: 100%; height: 100%; background-color: #0f172a; }
@@ -30,6 +30,20 @@
     .btn-hinh.active { background: #38bdf8; color: #0f172a; }
     
     /* Nút AR đặt hình lên bàn thực tế */
+    #trang-thai {
+      position: fixed; left: 50%; top: 72px; transform: translateX(-50%);
+      z-index: 110; max-width: 88%; padding: 8px 14px; border-radius: 14px;
+      background: rgba(15,23,42,.88); color: #e2e8f0; font-size: 13px;
+      text-align: center; pointer-events: none; transition: opacity .25s;
+    }
+    #loi-ar {
+      display: none; position: fixed; left: 50%; bottom: 92px;
+      transform: translateX(-50%); z-index: 120; width: min(88%, 420px);
+      box-sizing: border-box; padding: 12px 14px; border-radius: 14px;
+      background: rgba(127,29,29,.95); color: #fee2e2;
+      font-size: 13px; line-height: 1.4; text-align: center;
+    }
+
     #ar-button {
       position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
       background: #fbbf24; color: #0f172a; border: none; border-radius: 30px;
@@ -56,13 +70,16 @@
   </div>
 
   <!-- Thẻ model-viewer hỗ trợ hiển thị 3D tương tác và nút AR chuẩn Google -->
+  <div id="trang-thai" aria-live="polite">Đang khởi tạo mô hình 3D…</div>
+  <div id="loi-ar" role="alert"></div>
+
   <model-viewer 
     id="viewer"
     camera-controls 
     touch-action="pan-y" 
     auto-rotate 
     ar 
-    ar-modes="quick-look scene-viewer webxr" 
+    ar-modes="webxr scene-viewer quick-look" ar-scale="auto" xr-environment 
     shadow-intensity="1"
     exposure="1.2">
     
@@ -319,30 +336,100 @@
         { id: 'haimuoimat', scene: sc11 }
       ];
 
-      // Đóng gói mô hình dưới dạng URL cục bộ để model-viewer hiển thị mượt mà kèm nút AR
-      danhSach.forEach(item => {
-        exporter.parse(item.scene, function (gltf) {
-          const blob = new Blob([gltf], { type: 'model/gltf-binary' });
-          cacMoHinh[item.id] = URL.createObjectURL(blob);
-          if (item.id === 'tudien') {
-            viewer.src = cacMoHinh['tudien'];
+      // Export tuần tự 11 mô hình để giảm lỗi do tạo GLB đồng thời.
+    // Quick Look trên iPhone sẽ được model-viewer tự tạo USDZ khi cần.
+    async function xuatMoHinhAnToan(item) {
+      return new Promise((resolve, reject) => {
+        exporter.parse(
+          item.scene,
+          (gltf) => {
+            try {
+              const blob = new Blob([gltf], { type: 'model/gltf-binary' });
+              cacMoHinh[item.id] = URL.createObjectURL(blob);
+              resolve(cacMoHinh[item.id]);
+            } catch (e) {
+              reject(e);
+            }
+          },
+          (err) => reject(err),
+          {
+            binary: true,
+            trs: false,
+            onlyVisible: true,
+            includeCustomExtensions: false
           }
-        }, function(err) {
-          console.error("Lỗi xuất mô hình:", err);
-        }, { binary: true });
+        );
       });
     }
 
-    // Chuyển đổi mô hình khi bấm menu
+    async function khoiTaoBoMoHinh() {
+      const status = document.getElementById('trang-thai');
+
+      for (let i = 0; i < danhSach.length; i++) {
+        const item = danhSach[i];
+        status.textContent = `Đang tạo mô hình ${i + 1}/${danhSach.length}: ${item.id}…`;
+
+        try {
+          await xuatMoHinhAnToan(item);
+        } catch (err) {
+          console.error(`Lỗi xuất mô hình ${item.id}:`, err);
+        }
+      }
+
+      if (cacMoHinh.tudien) {
+        viewer.src = cacMoHinh.tudien;
+        viewer.dataset.currentModel = 'tudien';
+        status.textContent = 'Sẵn sàng: xoay/phóng to hoặc bấm nút AR.';
+        setTimeout(() => status.style.opacity = '0', 1800);
+      } else {
+        status.textContent = 'Không tạo được mô hình 3D. Hãy mở Console để xem lỗi.';
+      }
+    }
+
+    // Hiển thị lỗi AR thay vì để nút bấm "không phản hồi".
+    viewer.addEventListener('ar-status', (event) => {
+      const box = document.getElementById('loi-ar');
+
+      if (event.detail.status === 'failed') {
+        box.textContent =
+          'Không thể khởi động AR. Hãy dùng Chrome Android hoặc Safari iPhone và mở trang bằng HTTPS.';
+        box.style.display = 'block';
+        setTimeout(() => box.style.display = 'none', 5000);
+      }
+
+      if (event.detail.status === 'session-started') {
+        box.style.display = 'none';
+      }
+    });
+
     window.chonMoHinh = function(loai, btn) {
       document.querySelectorAll('.btn-hinh').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      if (cacMoHinh[loai]) {
-        viewer.src = cacMoHinh[loai];
+
+      if (!cacMoHinh[loai]) {
+        const status = document.getElementById('trang-thai');
+        status.textContent = 'Mô hình đang được chuẩn bị, vui lòng chờ…';
+        status.style.opacity = '1';
+        return;
       }
+
+      viewer.dataset.currentModel = loai;
+      viewer.src = cacMoHinh[loai];
+
+      const status = document.getElementById('trang-thai');
+      status.textContent = `Đã chọn: ${btn.textContent}`;
+      status.style.opacity = '1';
+      setTimeout(() => status.style.opacity = '0', 1400);
     };
 
+    window.addEventListener('beforeunload', () => {
+      Object.values(cacMoHinh).forEach(url => {
+        if (url) URL.revokeObjectURL(url);
+      });
+    });
+
     khoiTaoTatCaHinh();
-  </script>
+    khoiTaoBoMoHinh();
+</script>
 </body>
 </html>
