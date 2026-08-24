@@ -9,7 +9,6 @@
     body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: #0f172a; font-family: sans-serif; }
     model-viewer { width: 100%; height: 100%; background-color: #0f172a; }
     
-    /* Menu chọn khối hình */
     #menu-chon {
       position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
       display: flex; gap: 8px; z-index: 100; width: 92%; max-width: 480px;
@@ -34,7 +33,6 @@
 </head>
 <body>
 
-  <!-- Menu chuyển đổi 4 khối -->
   <div id="menu-chon">
     <button class="btn-hinh active" onclick="chonMoHinh('tudien', this)">Tứ diện đều</button>
     <button class="btn-hinh" onclick="chonMoHinh('choptugiac', this)">Chóp tứ giác đều</button>
@@ -65,8 +63,17 @@
     const viewer = document.getElementById('viewer');
     const cacMoHinh = {};
 
-    const matXanh = new THREE.MeshStandardMaterial({ color: 0x38bdf8, opacity: 0.65, transparent: true, roughness: 0.2, metalness: 0.1, side: THREE.DoubleSide });
-    const matVien = new THREE.LineBasicMaterial({ color: 0x0284c7, linewidth: 2 });
+    // Bảng màu trực quan cho từng mặt
+    const taoVatLieu = (hexColor) => new THREE.MeshStandardMaterial({
+      color: hexColor,
+      opacity: 0.72,
+      transparent: true,
+      roughness: 0.2,
+      metalness: 0.1,
+      side: THREE.DoubleSide
+    });
+
+    const matVien = new THREE.LineBasicMaterial({ color: 0x0f172a, linewidth: 2 });
     const matDiem = new THREE.MeshBasicMaterial({ color: 0xdc2626 });
     const matDuongCao = new THREE.LineBasicMaterial({ color: 0xef4444, linewidth: 3 });
 
@@ -76,28 +83,68 @@
       scene.add(sp);
     }
 
+    function taoMatTamGiac(p1, p2, p3, mat) {
+      const geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+        p1.x, p1.y, p1.z,  p2.x, p2.y, p2.z,  p3.x, p3.y, p3.z
+      ]), 3));
+      geom.computeVertexNormals();
+      return new THREE.Mesh(geom, mat);
+    }
+
+    function taoMatTuGiac(p1, p2, p3, p4, mat) {
+      const geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+        p1.x, p1.y, p1.z,  p2.x, p2.y, p2.z,  p3.x, p3.y, p3.z,
+        p1.x, p1.y, p1.z,  p3.x, p3.y, p3.z,  p4.x, p4.y, p4.z
+      ]), 3));
+      geom.computeVertexNormals();
+      return new THREE.Mesh(geom, mat);
+    }
+
     function khoiTaoTatCaHinh() {
-      // 1. Tứ diện đều
+      // 1. TỨ DIỆN ĐỀU (4 mặt: Vàng chanh, Xanh dương, Xanh lá, Đỏ cam)
       const scTuDien = new THREE.Scene();
-      const vA = new THREE.Vector3(0, 0.816, 0), vB = new THREE.Vector3(0, 0, 0.577), vC = new THREE.Vector3(-0.5, 0, -0.289), vD = new THREE.Vector3(0.5, 0, -0.289), vH = new THREE.Vector3(0, 0, 0);
-      const geomTD = new THREE.BufferGeometry();
-      geomTD.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+      const vA = new THREE.Vector3(0, 0.816, 0);
+      const vB = new THREE.Vector3(0, 0, 0.577);
+      const vC = new THREE.Vector3(-0.5, 0, -0.289);
+      const vD = new THREE.Vector3(0.5, 0, -0.289);
+      const vH = new THREE.Vector3(0, 0, 0);
+
+      scTuDien.add(taoMatTamGiac(vB, vC, vD, taoVatLieu(0xfacc15))); // Đáy BCD: Vàng
+      scTuDien.add(taoMatTamGiac(vA, vB, vC, taoVatLieu(0x38bdf8))); // Mặt ABC: Xanh dương
+      scTuDien.add(taoMatTamGiac(vA, vC, vD, taoVatLieu(0x4ade80))); // Mặt ACD: Xanh lá
+      scTuDien.add(taoMatTamGiac(vA, vD, vB, taoVatLieu(0xf87171))); // Mặt ADB: Đỏ hồng
+
+      // Khung viền 6 cạnh
+      const geomTuan = new THREE.BufferGeometry();
+      geomTuan.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
         vB.x, vB.y, vB.z,  vC.x, vC.y, vC.z,  vD.x, vD.y, vD.z,
         vA.x, vA.y, vA.z,  vB.x, vB.y, vB.z,  vC.x, vC.y, vC.z,
         vA.x, vA.y, vA.z,  vC.x, vC.y, vC.z,  vD.x, vD.y, vD.z,
         vA.x, vA.y, vA.z,  vD.x, vD.y, vD.z,  vB.x, vB.y, vB.z
       ]), 3));
-      geomTD.computeVertexNormals();
-      scTuDien.add(new THREE.Mesh(geomTD, matXanh));
-      scTuDien.add(new THREE.LineSegments(new THREE.WireframeGeometry(geomTD), matVien));
+      scTuDien.add(new THREE.LineSegments(new THREE.WireframeGeometry(geomTuan), matVien));
       scTuDien.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([vA, vH]), matDuongCao));
       [vA, vB, vC, vD].forEach(p => taoDiem(scTuDien, p));
 
-      // 2. Chóp tứ giác đều
+      // 2. CHÓP TỨ GIÁC ĐỀU (Đáy vàng + 4 mặt bên 4 màu)
       const scChop = new THREE.Scene();
-      const vS = new THREE.Vector3(0, 0.85, 0), vA2 = new THREE.Vector3(-0.4, 0, 0.4), vB2 = new THREE.Vector3(0.4, 0, 0.4), vC2 = new THREE.Vector3(0.4, 0, -0.4), vD2 = new THREE.Vector3(-0.4, 0, -0.4), vO = new THREE.Vector3(0, 0, 0);
-      const geomChop = new THREE.BufferGeometry();
-      geomChop.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+      const vS = new THREE.Vector3(0, 0.85, 0);
+      const vA2 = new THREE.Vector3(-0.4, 0, 0.4);
+      const vB2 = new THREE.Vector3(0.4, 0, 0.4);
+      const vC2 = new THREE.Vector3(0.4, 0, -0.4);
+      const vD2 = new THREE.Vector3(-0.4, 0, -0.4);
+      const vO = new THREE.Vector3(0, 0, 0);
+
+      scChop.add(taoMatTuGiac(vA2, vB2, vC2, vD2, taoVatLieu(0xfacc15))); // Đáy ABCD: Vàng
+      scChop.add(taoMatTamGiac(vS, vA2, vB2, taoVatLieu(0x38bdf8)));       // SAB: Xanh lam
+      scChop.add(taoMatTamGiac(vS, vB2, vC2, taoVatLieu(0x4ade80)));       // SBC: Xanh lá
+      scChop.add(taoMatTamGiac(vS, vC2, vD2, taoVatLieu(0xf472b6)));       // SCD: Hồng
+      scChop.add(taoMatTamGiac(vS, vD2, vA2, taoVatLieu(0xfb923c)));       // SDA: Cam
+
+      const geomChopKhung = new THREE.BufferGeometry();
+      geomChopKhung.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
         vA2.x, vA2.y, vA2.z,  vB2.x, vB2.y, vB2.z,  vC2.x, vC2.y, vC2.z,
         vA2.x, vA2.y, vA2.z,  vC2.x, vC2.y, vC2.z,  vD2.x, vD2.y, vD2.z,
         vS.x, vS.y, vS.z,  vA2.x, vA2.y, vA2.z,  vB2.x, vB2.y, vB2.z,
@@ -105,18 +152,25 @@
         vS.x, vS.y, vS.z,  vC2.x, vC2.y, vC2.z,  vD2.x, vD2.y, vD2.z,
         vS.x, vS.y, vS.z,  vD2.x, vD2.y, vD2.z,  vA2.x, vA2.y, vA2.z
       ]), 3));
-      geomChop.computeVertexNormals();
-      scChop.add(new THREE.Mesh(geomChop, matXanh));
-      scChop.add(new THREE.LineSegments(new THREE.WireframeGeometry(geomChop), matVien));
+      scChop.add(new THREE.LineSegments(new THREE.WireframeGeometry(geomChopKhung), matVien));
       scChop.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([vS, vO]), matDuongCao));
       [vS, vA2, vB2, vC2, vD2].forEach(p => taoDiem(scChop, p));
 
-      // 3. Lập phương
+      // 3. KHỐI LẬP PHƯƠNG (6 mặt 6 màu riêng biệt)
       const scLapPhuong = new THREE.Scene();
+      const materialsLapPhuong = [
+        taoVatLieu(0xf87171), // Phải (Đỏ)
+        taoVatLieu(0x60a5fa), // Trái (Lam)
+        taoVatLieu(0x4ade80), // Trên (Xanh lá)
+        taoVatLieu(0xfacc15), // Dưới (Vàng)
+        taoVatLieu(0xfb923c), // Trước (Cam)
+        taoVatLieu(0xc084fc)  // Sau (Tím)
+      ];
       const boxGeom = new THREE.BoxGeometry(0.7, 0.7, 0.7);
       boxGeom.translate(0, 0.35, 0);
-      scLapPhuong.add(new THREE.Mesh(boxGeom, matXanh));
+      scLapPhuong.add(new THREE.Mesh(boxGeom, materialsLapPhuong));
       scLapPhuong.add(new THREE.LineSegments(new THREE.WireframeGeometry(boxGeom), matVien));
+      
       const half = 0.35;
       for (let x of [-half, half]) {
         for (let y of [0, 0.7]) {
@@ -126,16 +180,24 @@
         }
       }
 
-      // 4. Khối nón
+      // 4. KHỐI NÓN (Mặt nón xanh lam, Đáy tròn màu vàng)
       const scNon = new THREE.Scene();
-      const coneGeom = new THREE.ConeGeometry(0.45, 0.8, 32);
+      const coneMat = taoVatLieu(0x38bdf8);
+      const coneGeom = new THREE.ConeGeometry(0.45, 0.8, 32, 1, true); // Mở đáy
       coneGeom.translate(0, 0.4, 0);
-      scNon.add(new THREE.Mesh(coneGeom, matXanh));
+      scNon.add(new THREE.Mesh(coneGeom, coneMat));
       scNon.add(new THREE.LineSegments(new THREE.WireframeGeometry(coneGeom), matVien));
+
+      // Đáy tròn
+      const circleGeom = new THREE.CircleGeometry(0.45, 32);
+      circleGeom.rotateX(Math.PI / 2);
+      scNon.add(new THREE.Mesh(circleGeom, taoVatLieu(0xfacc15)));
+
+      // Trục nón
       scNon.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0.8, 0), new THREE.Vector3(0, 0, 0)]), matDuongCao));
       taoDiem(scNon, new THREE.Vector3(0, 0.8, 0));
 
-      // Đóng gói và lưu sẵn URL vào bộ nhớ
+      // Đóng gói mô hình
       const danhSach = [
         { id: 'tudien', scene: scTuDien },
         { id: 'choptugiac', scene: scChop },
