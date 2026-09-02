@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MATH-AR-V2 — Phòng học Hình học Không gian 12</title>
+  
+  <!-- Import model-viewer -->
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+  
+  <!-- Import Three.js -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.157.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.157.0/examples/jsm/"
+      }
+    }
+  </script>
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #0f172a;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    model-viewer {
+      width: 100%;
+      height: 100%;
+      background-color: #0f172a;
+      --poster-color: transparent;
+      --progress-bar-color: #38bdf8;
+    }
+
+    /* Menu chọn khối hình */
+    #menu-chon {
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 6px;
+      z-index: 100;
+      width: 95%;
+      max-width: 900px;
+      overflow-x: auto;
+      padding: 8px;
+      background: rgba(15, 23, 42, 0.95);
+      border-radius: 25px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .btn-hinh {
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #cbd5e1;
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.3s;
+      flex-shrink: 0;
+    }
+
+    .btn-hinh:hover {
+      background: rgba(56, 189, 248, 0.3);
+      color: white;
+    }
+
+    .btn-hinh.active {
+      background: #38bdf8;
+      color: #0f172a;
+      box-shadow: 0 2px 10px rgba(56, 189, 248, 0.5);
+    }
+
+    /* Trạng thái */
+    #trang-thai {
+      position: fixed;
+      left: 50%;
+      top: 70px;
+      transform: translateX(-50%);
+      z-index: 110;
+      padding: 6px 16px;
+      border-radius: 15px;
+      background: rgba(15, 23, 42, 0.9);
+      color: #38bdf8;
+      font-size: 12px;
+      text-align: center;
+      pointer-events: none;
+      transition: opacity 0.5s;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    /* Nút AR */
+    #ar-button {
+      position: fixed;
+      bottom: calc(env(safe-area-inset-bottom) + 82px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #fbbf24;
+      color: #0f172a;
+      border: none;
+      border-radius: 30px;
+      padding: 14px 25px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(251, 191, 36, 0.5);
+      z-index: 100;
+      transition: all 0.3s;
+      display: block;
+    }
+
+    #ar-button:hover {
+      background: #fcd34d;
+      transform: translateX(-50%) scale(1.05);
+    }
+
+    #che-do-thiet-bi {
+      position: fixed;
+      right: 10px;
+      top: 72px;
+      z-index: 112;
+      max-width: min(64vw, 330px);
+      padding: 6px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 999px;
+      color: #dbeafe;
+      background: rgba(15, 23, 42, 0.90);
+      font-size: 11px;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    #huong-dan-ar {
+      position: fixed;
+      z-index: 115;
+      left: 50%;
+      bottom: calc(env(safe-area-inset-bottom) + 20px);
+      display: none;
+      width: min(90vw, 480px);
+      padding: 8px 12px;
+      border-radius: 14px;
+      color: #e0f2fe;
+      background: rgba(3, 105, 161, 0.86);
+      font-size: 12px;
+      text-align: center;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+
+    model-viewer[ar-status="session-started"] #huong-dan-ar {
+      display: block;
+    }
+
+    model-viewer[ar-status="session-started"] #menu-chon {
+      top: max(10px, env(safe-area-inset-top));
+      background: rgba(15, 23, 42, 0.82);
+    }
+
+    model-viewer[ar-status="session-started"] #trang-thai {
+      top: calc(max(10px, env(safe-area-inset-top)) + 58px);
+    }
+
+    model-viewer[ar-status="session-started"] #che-do-thiet-bi {
+      display: none;
+    }
+
+    @media (max-width: 600px) {
+      .btn-hinh {
+        padding: 6px 10px;
+        font-size: 11px;
+      }
+      #ar-button {
+        padding: 12px 20px;
+        font-size: 14px;
+        bottom: calc(env(safe-area-inset-bottom) + 72px);
+      }
+      #trang-thai {
+        top: 60px;
+        font-size: 11px;
+      }
+      #che-do-thiet-bi {
+        top: 64px;
+        max-width: 58vw;
+        font-size: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Model viewer: các điều khiển đặt bên trong để tiếp tục dùng được trong WebXR -->
+  <model-viewer 
+    id="viewer"
+    camera-controls 
+    touch-action="pan-y" 
+    auto-rotate 
+    ar 
+    ar-modes="webxr scene-viewer quick-look" 
+    ar-scale="auto"
+    xr-environment
+    shadow-intensity="1"
+    exposure="1.2">
+
+    <div id="menu-chon">
+      <button class="btn-hinh active" data-model="tudien" onclick="chonMoHinh('tudien', this)">Tứ diện đều</button>
+      <button class="btn-hinh" data-model="choptugiac" onclick="chonMoHinh('choptugiac', this)">Chóp tứ giác</button>
+      <button class="btn-hinh" data-model="langtru" onclick="chonMoHinh('langtru', this)">Lăng trụ</button>
+      <button class="btn-hinh" data-model="tru" onclick="chonMoHinh('tru', this)">Hình trụ</button>
+      <button class="btn-hinh" data-model="matcau" onclick="chonMoHinh('matcau', this)">Mặt cầu</button>
+      <button class="btn-hinh" data-model="lapphuong" onclick="chonMoHinh('lapphuong', this)">Lập phương</button>
+      <button class="btn-hinh" data-model="hopchunhat" onclick="chonMoHinh('hopchunhat', this)">Hộp chữ nhật</button>
+      <button class="btn-hinh" data-model="non" onclick="chonMoHinh('non', this)">Hình nón</button>
+      <button class="btn-hinh" data-model="batdien" onclick="chonMoHinh('batdien', this)">Bát diện</button>
+      <button class="btn-hinh" data-model="muoihimat" onclick="chonMoHinh('muoihimat', this)">12 mặt</button>
+      <button class="btn-hinh" data-model="haimuoimat" onclick="chonMoHinh('haimuoimat', this)">20 mặt</button>
+    </div>
+
+    <div id="trang-thai">Đang tải mô hình...</div>
+    <div id="che-do-thiet-bi">Đang kiểm tra khả năng AR…</div>
+    <div id="huong-dan-ar">Đã đặt hình: chọn hình khác ở thanh trên, không cần quét lại mặt phẳng.</div>
+
+    <button slot="ar-button" id="ar-button">
+      📷 XEM TRONG KHÔNG GIAN THỰC (AR)
+    </button>
+  </model-viewer>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+    
+    const exporter = new GLTFExporter();
+    const viewer = document.getElementById('viewer');
+    const trangThai = document.getElementById('trang-thai');
+    const arButton = document.getElementById('ar-button');
+    const cheDoThietBi = document.getElementById('che-do-thiet-bi');
+    const cacMoHinh = {};
+    let moHinhDangChon = 'tudien';
+    let phienWebXR = false;
+    let webXRHoTro = false;
+
+    // Bảng màu gốc từ file đầu tiên
+    const bangMau = [
+      0xf87171, 0x60a5fa, 0x4ade80, 0xfacc15, 0xfb923c,
+      0xc084fc, 0x2dd4bf, 0xf472b6, 0xa78bfa, 0x38bdf8,
+      0xfb7185, 0xa3e635, 0xe879f9, 0x34d399, 0xfde047,
+      0x818cf8, 0xf43f5e, 0x10b981, 0x06b6d4, 0xd946ef
+    ];
+
+    // Hàm tạo vật liệu
+    function taoVatLieu(mau, doTrongSuot = 0.85) {
+      return new THREE.MeshStandardMaterial({
+        color: mau,
+        opacity: doTrongSuot,
+        transparent: true,
+        roughness: 0.2,
+        metalness: 0.1,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      });
+    }
+
+    // Hàm tạo đỉnh - CỰC NHỎ (gần như điểm)
+    function taoDinh(scene, viTri, mau = 0xdc2626) {
+      const sphereGeometry = new THREE.SphereGeometry(0.008, 4, 4);
+      const sphereMaterial = new THREE.MeshBasicMaterial({ color: mau });
+      const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+      sphere.position.copy(viTri);
+      scene.add(sphere);
+    }
+
+    // Hàm tạo cạnh - TẤT CẢ NÉT LIỀN
+    function themCanh(scene, diem1, diem2, mau = 0x1e293b) {
+      const geometry = new THREE.BufferGeometry().setFromPoints([diem1, diem2]);
+      const line = new THREE.Line(geometry, new THREE.LineBasicMaterial({ 
+        color: mau,
+        linewidth: 2
+      }));
+      scene.add(line);
+    }
+
+    // Hàm tạo đường cao
+    function themDuongCao(scene, tu, den) {
+      const geometry = new THREE.BufferGeometry().setFromPoints([tu, den]);
+      const line = new THREE.Line(geometry, new THREE.LineBasicMaterial({ 
+        color: 0xef4444,
+        linewidth: 2
+      }));
+      scene.add(line);
+    }
+
+    // Hàm tạo mặt tam giác
+    function taoMatTamGiac(p1, p2, p3, mau) {
+      const geometry = new THREE.BufferGeometry();
+      const vertices = new Float32Array([
+        p1.x, p1.y, p1.z,
+        p2.x, p2.y, p2.z,
+        p3.x, p3.y, p3.z
+      ]);
+      geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+      geometry.computeVertexNormals();
+      return new THREE.Mesh(geometry, taoVatLieu(mau));
+    }
+
+    // Hàm tạo mặt tứ giác
+    function taoMatTuGiac(p1, p2, p3, p4, mau) {
+      const geometry = new THREE.BufferGeometry();
+      const vertices = new Float32Array([
+        p1.x, p1.y, p1.z,
+        p2.x, p2.y, p2.z,
+        p3.x, p3.y, p3.z,
+        p1.x, p1.y, p1.z,
+        p3.x, p3.y, p3.z,
+        p4.x, p4.y, p4.z
+      ]);
+      geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+      geometry.computeVertexNormals();
+      return new THREE.Mesh(geometry, taoVatLieu(mau));
+    }
+
+    // Hàm tạo mặt ngũ giác
+    function taoMatNguGiac(p1, p2, p3, p4, p5, mau) {
+      const geometry = new THREE.BufferGeometry();
+      const vertices = new Float32Array([
+        p1.x, p1.y, p1.z,
+        p2.x, p2.y, p2.z,
+        p3.x, p3.y, p3.z,
+        p1.x, p1.y, p1.z,
+        p3.x, p3.y, p3.z,
+        p4.x, p4.y, p4.z,
+        p1.x, p1.y, p1.z,
+        p4.x, p4.y, p4.z,
+        p5.x, p5.y, p5.z
+      ]);
+      geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+      geometry.computeVertexNormals();
+      return new THREE.Mesh(geometry, taoVatLieu(mau));
+    }
+
+    // Tạo các mô hình
+    function taoTatCaMoHinh() {
+      const danhSach = [];
+
+      // 1. Tứ diện đều
+      const scene1 = new THREE.Scene();
+      const vA = new THREE.Vector3(0, 0.816, 0);
+      const vB = new THREE.Vector3(0, 0, 0.577);
+      const vC = new THREE.Vector3(-0.5, 0, -0.289);
+      const vD = new THREE.Vector3(0.5, 0, -0.289);
+      const vH = new THREE.Vector3(0, 0, 0);
+      
+      scene1.add(taoMatTamGiac(vB, vC, vD, bangMau[0]));
+      scene1.add(taoMatTamGiac(vA, vB, vC, bangMau[1]));
+      scene1.add(taoMatTamGiac(vA, vC, vD, bangMau[2]));
+      scene1.add(taoMatTamGiac(vA, vD, vB, bangMau[3]));
+      
+      // Tất cả các cạnh nét liền
+      themCanh(scene1, vA, vB);
+      themCanh(scene1, vA, vC);
+      themCanh(scene1, vA, vD);
+      themCanh(scene1, vB, vC);
+      themCanh(scene1, vC, vD);
+      themCanh(scene1, vD, vB);
+      
+      themDuongCao(scene1, vA, vH);
+      
+      // Đỉnh cực nhỏ
+      taoDinh(scene1, vA);
+      taoDinh(scene1, vB);
+      taoDinh(scene1, vC);
+      taoDinh(scene1, vD);
+      
+      danhSach.push({ id: 'tudien', scene: scene1 });
+
+      // 2. Chóp tứ giác đều
+      const scene2 = new THREE.Scene();
+      const vS = new THREE.Vector3(0, 0.85, 0);
+      const vA2 = new THREE.Vector3(-0.4, 0, 0.4);
+      const vB2 = new THREE.Vector3(0.4, 0, 0.4);
+      const vC2 = new THREE.Vector3(0.4, 0, -0.4);
+      const vD2 = new THREE.Vector3(-0.4, 0, -0.4);
+      const vO = new THREE.Vector3(0, 0, 0);
+      
+      scene2.add(taoMatTuGiac(vA2, vB2, vC2, vD2, bangMau[4]));
+      scene2.add(taoMatTamGiac(vS, vA2, vB2, bangMau[5]));
+      scene2.add(taoMatTamGiac(vS, vB2, vC2, bangMau[6]));
+      scene2.add(taoMatTamGiac(vS, vC2, vD2, bangMau[7]));
+      scene2.add(taoMatTamGiac(vS, vD2, vA2, bangMau[8]));
+      
+      // Tất cả các cạnh
+      themCanh(scene2, vS, vA2);
+      themCanh(scene2, vS, vB2);
+      themCanh(scene2, vS, vC2);
+      themCanh(scene2, vS, vD2);
+      themCanh(scene2, vA2, vB2);
+      themCanh(scene2, vB2, vC2);
+      themCanh(scene2, vC2, vD2);
+      themCanh(scene2, vD2, vA2);
+      
+      themDuongCao(scene2, vS, vO);
+      
+      taoDinh(scene2, vS);
+      taoDinh(scene2, vA2);
+      taoDinh(scene2, vB2);
+      taoDinh(scene2, vC2);
+      taoDinh(scene2, vD2);
+      
+      danhSach.push({ id: 'choptugiac', scene: scene2 });
+
+      // 3. Lăng trụ tam giác
+      const scene3 = new THREE.Scene();
+      const pA = new THREE.Vector3(-0.35, 0, 0.35);
+      const pB = new THREE.Vector3(0.35, 0, 0.35);
+      const pC = new THREE.Vector3(0, 0, -0.4);
+      const hLT = 0.75;
+      const pA1 = new THREE.Vector3(-0.35, hLT, 0.35);
+      const pB1 = new THREE.Vector3(0.35, hLT, 0.35);
+      const pC1 = new THREE.Vector3(0, hLT, -0.4);
+      
+      scene3.add(taoMatTamGiac(pA, pB, pC, bangMau[9]));
+      scene3.add(taoMatTamGiac(pA1, pB1, pC1, bangMau[10]));
+      scene3.add(taoMatTuGiac(pA, pB, pB1, pA1, bangMau[11]));
+      scene3.add(taoMatTuGiac(pB, pC, pC1, pB1, bangMau[12]));
+      scene3.add(taoMatTuGiac(pC, pA, pA1, pC1, bangMau[13]));
+      
+      // Tất cả các cạnh
+      themCanh(scene3, pA, pA1);
+      themCanh(scene3, pB, pB1);
+      themCanh(scene3, pC, pC1);
+      themCanh(scene3, pA, pB);
+      themCanh(scene3, pB, pC);
+      themCanh(scene3, pC, pA);
+      themCanh(scene3, pA1, pB1);
+      themCanh(scene3, pB1, pC1);
+      themCanh(scene3, pC1, pA1);
+      
+      taoDinh(scene3, pA);
+      taoDinh(scene3, pB);
+      taoDinh(scene3, pC);
+      taoDinh(scene3, pA1);
+      taoDinh(scene3, pB1);
+      taoDinh(scene3, pC1);
+      
+      danhSach.push({ id: 'langtru', scene: scene3 });
+
+      // 4. Hình trụ
+      const scene4 = new THREE.Scene();
+      const cylGeom = new THREE.CylinderGeometry(0.38, 0.38, 0.75, 32, 1, true);
+      cylGeom.translate(0, 0.375, 0);
+      scene4.add(new THREE.Mesh(cylGeom, taoVatLieu(bangMau[14])));
+      
+      const dayTruDuoi = new THREE.CircleGeometry(0.38, 32);
+      dayTruDuoi.rotateX(Math.PI / 2);
+      scene4.add(new THREE.Mesh(dayTruDuoi, taoVatLieu(bangMau[15])));
+      
+      const dayTruTren = new THREE.CircleGeometry(0.38, 32);
+      dayTruTren.rotateX(-Math.PI / 2);
+      dayTruTren.translate(0, 0.75, 0);
+      scene4.add(new THREE.Mesh(dayTruTren, taoVatLieu(bangMau[16])));
+      
+      themDuongCao(scene4, new THREE.Vector3(0, 0.75, 0), new THREE.Vector3(0, 0, 0));
+      
+      danhSach.push({ id: 'tru', scene: scene4 });
+
+      // 5. Mặt cầu
+      const scene5 = new THREE.Scene();
+      const sphGeom = new THREE.SphereGeometry(0.45, 32, 32);
+      sphGeom.translate(0, 0.45, 0);
+      scene5.add(new THREE.Mesh(sphGeom, taoVatLieu(bangMau[17], 0.6)));
+      
+      const ringGeom = new THREE.RingGeometry(0.445, 0.455, 64);
+      ringGeom.rotateX(Math.PI / 2);
+      ringGeom.translate(0, 0.45, 0);
+      scene5.add(new THREE.Mesh(ringGeom, new THREE.MeshBasicMaterial({ 
+        color: 0xef4444, 
+        side: THREE.DoubleSide 
+      })));
+      
+      taoDinh(scene5, new THREE.Vector3(0, 0.45, 0));
+      
+      danhSach.push({ id: 'matcau', scene: scene5 });
+
+      // 6. Hình lập phương
+      const scene6 = new THREE.Scene();
+      const matsLP = [0, 1, 2, 3, 4, 5].map(i => taoVatLieu(bangMau[i]));
+      const boxGeom = new THREE.BoxGeometry(0.65, 0.65, 0.65);
+      boxGeom.translate(0, 0.325, 0);
+      scene6.add(new THREE.Mesh(boxGeom, matsLP));
+      
+      const offset = 0.325;
+      const dinhLapPhuong = [];
+      for (let x of [-offset, offset]) {
+        for (let y of [0, 0.65]) {
+          for (let z of [-offset, offset]) {
+            dinhLapPhuong.push(new THREE.Vector3(x, y, z));
+          }
+        }
+      }
+      
+      // Tất cả các cạnh nét liền
+      const canhLP = [
+        [0, 1], [1, 3], [3, 2], [2, 0],
+        [4, 5], [5, 7], [7, 6], [6, 4],
+        [0, 4], [1, 5], [2, 6], [3, 7]
+      ];
+      
+      canhLP.forEach(([i, j]) => {
+        themCanh(scene6, dinhLapPhuong[i], dinhLapPhuong[j]);
+      });
+      
+      dinhLapPhuong.forEach(dinh => taoDinh(scene6, dinh));
+      
+      danhSach.push({ id: 'lapphuong', scene: scene6 });
+
+      // 7. Hình hộp chữ nhật
+      const scene7 = new THREE.Scene();
+      const matsHCN = [6, 7, 8, 9, 10, 11].map(i => taoVatLieu(bangMau[i]));
+      const boxHCNGeom = new THREE.BoxGeometry(0.8, 0.45, 0.55);
+      boxHCNGeom.translate(0, 0.225, 0);
+      scene7.add(new THREE.Mesh(boxHCNGeom, matsHCN));
+      
+      const dinhHop = [];
+      for (let x of [-0.4, 0.4]) {
+        for (let y of [0, 0.45]) {
+          for (let z of [-0.275, 0.275]) {
+            dinhHop.push(new THREE.Vector3(x, y, z));
+          }
+        }
+      }
+      
+      const canhHop = [
+        [0, 1], [1, 3], [3, 2], [2, 0],
+        [4, 5], [5, 7], [7, 6], [6, 4],
+        [0, 4], [1, 5], [2, 6], [3, 7]
+      ];
+      
+      canhHop.forEach(([i, j]) => {
+        themCanh(scene7, dinhHop[i], dinhHop[j]);
+      });
+      
+      dinhHop.forEach(dinh => taoDinh(scene7, dinh));
+      
+      danhSach.push({ id: 'hopchunhat', scene: scene7 });
+
+      // 8. Hình nón
+      const scene8 = new THREE.Scene();
+      const coneGeom = new THREE.ConeGeometry(0.45, 0.8, 32, 1, true);
+      coneGeom.translate(0, 0.4, 0);
+      scene8.add(new THREE.Mesh(coneGeom, taoVatLieu(bangMau[12])));
+      
+      const circleGeom1 = new THREE.CircleGeometry(0.45, 32);
+      circleGeom1.rotateX(Math.PI / 2);
+      scene8.add(new THREE.Mesh(circleGeom1, taoVatLieu(bangMau[13])));
+      
+      themDuongCao(scene8, new THREE.Vector3(0, 0.8, 0), new THREE.Vector3(0, 0, 0));
+      taoDinh(scene8, new THREE.Vector3(0, 0.8, 0));
+      
+      danhSach.push({ id: 'non', scene: scene8 });
+
+      // 9. Bát diện đều
+      const scene9 = new THREE.Scene();
+      const rOct = 0.46;
+      const oTop = new THREE.Vector3(0, rOct + 0.46, 0);
+      const oBot = new THREE.Vector3(0, -rOct + 0.46, 0);
+      const o1 = new THREE.Vector3(rOct, 0.46, 0);
+      const o2 = new THREE.Vector3(0, 0.46, rOct);
+      const o3 = new THREE.Vector3(-rOct, 0.46, 0);
+      const o4 = new THREE.Vector3(0, 0.46, -rOct);
+      
+      const matOct = [
+        [oTop, o1, o2], [oTop, o2, o3], [oTop, o3, o4], [oTop, o4, o1],
+        [oBot, o2, o1], [oBot, o3, o2], [oBot, o4, o3], [oBot, o1, o4]
+      ];
+      matOct.forEach((face, i) => {
+        scene9.add(taoMatTamGiac(face[0], face[1], face[2], bangMau[i]));
+      });
+      
+      // Tất cả các cạnh
+      themCanh(scene9, oTop, o1);
+      themCanh(scene9, oTop, o2);
+      themCanh(scene9, oTop, o3);
+      themCanh(scene9, oTop, o4);
+      themCanh(scene9, oBot, o1);
+      themCanh(scene9, oBot, o2);
+      themCanh(scene9, oBot, o3);
+      themCanh(scene9, oBot, o4);
+      themCanh(scene9, o1, o2);
+      themCanh(scene9, o2, o3);
+      themCanh(scene9, o3, o4);
+      themCanh(scene9, o4, o1);
+      
+      taoDinh(scene9, oTop);
+      taoDinh(scene9, oBot);
+      taoDinh(scene9, o1);
+      taoDinh(scene9, o2);
+      taoDinh(scene9, o3);
+      taoDinh(scene9, o4);
+      
+      danhSach.push({ id: 'batdien', scene: scene9 });
+
+      // 10. 12 mặt đều
+      const scene10 = new THREE.Scene();
+      const phi = (1 + Math.sqrt(5)) / 2;
+      const a = 0.26;
+      const b = a / phi;
+      const c = a * phi;
+      const vDodeca = [
+        new THREE.Vector3(-a, -a, -a), new THREE.Vector3(-a, -a, a),
+        new THREE.Vector3(-a, a, -a), new THREE.Vector3(-a, a, a),
+        new THREE.Vector3(a, -a, -a), new THREE.Vector3(a, -a, a),
+        new THREE.Vector3(a, a, -a), new THREE.Vector3(a, a, a),
+        new THREE.Vector3(0, -b, -c), new THREE.Vector3(0, -b, c),
+        new THREE.Vector3(0, b, -c), new THREE.Vector3(0, b, c),
+        new THREE.Vector3(-b, -c, 0), new THREE.Vector3(-b, c, 0),
+        new THREE.Vector3(b, -c, 0), new THREE.Vector3(b, c, 0),
+        new THREE.Vector3(-c, 0, -b), new THREE.Vector3(-c, 0, b),
+        new THREE.Vector3(c, 0, -b), new THREE.Vector3(c, 0, b)
+      ];
+      vDodeca.forEach(p => p.y += 0.46);
+      
+      const mat12 = [
+        [3, 11, 7, 15, 13], [7, 11, 9, 5, 19], [7, 19, 18, 6, 15],
+        [15, 6, 10, 2, 13], [13, 2, 16, 17, 3], [3, 17, 1, 9, 11],
+        [8, 10, 6, 18, 4], [9, 1, 12, 14, 5], [5, 14, 4, 18, 19],
+        [4, 14, 12, 0, 8], [10, 8, 0, 16, 2], [12, 1, 17, 16, 0]
+      ];
+      mat12.forEach((face, i) => {
+        scene10.add(taoMatNguGiac(
+          vDodeca[face[0]], vDodeca[face[1]], vDodeca[face[2]], 
+          vDodeca[face[3]], vDodeca[face[4]], bangMau[i]
+        ));
+      });
+      
+      vDodeca.forEach(p => taoDinh(scene10, p));
+      
+      danhSach.push({ id: 'muoihimat', scene: scene10 });
+
+      // 11. 20 mặt đều
+      const scene11 = new THREE.Scene();
+      const rIco = 0.45;
+      const t = (1 + Math.sqrt(5)) / 2;
+      const s = rIco / Math.sqrt(1 + t * t);
+      const vIco = [
+        new THREE.Vector3(-s, t * s, 0), new THREE.Vector3(s, t * s, 0),
+        new THREE.Vector3(-s, -t * s, 0), new THREE.Vector3(s, -t * s, 0),
+        new THREE.Vector3(0, -s, t * s), new THREE.Vector3(0, s, t * s),
+        new THREE.Vector3(0, -s, -t * s), new THREE.Vector3(0, s, -t * s),
+        new THREE.Vector3(t * s, 0, -s), new THREE.Vector3(t * s, 0, s),
+        new THREE.Vector3(-t * s, 0, -s), new THREE.Vector3(-t * s, 0, s)
+      ];
+      vIco.forEach(p => p.y += 0.46);
+      
+      const faces20 = [
+        [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
+        [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+        [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
+        [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]
+      ];
+      faces20.forEach((f, i) => {
+        scene11.add(taoMatTamGiac(vIco[f[0]], vIco[f[1]], vIco[f[2]], bangMau[i]));
+      });
+      
+      vIco.forEach(p => taoDinh(scene11, p));
+      
+      danhSach.push({ id: 'haimuoimat', scene: scene11 });
+
+      return danhSach;
+    }
+
+    // Xuất và gán mô hình
+    function xuatVaGanMoHinh() {
+      const danhSachMoHinh = taoTatCaMoHinh();
+      
+      danhSachMoHinh.forEach((item) => {
+        try {
+          exporter.parse(item.scene, function(gltf) {
+            const blob = new Blob([gltf], { type: 'model/gltf-binary' });
+            const url = URL.createObjectURL(blob);
+            cacMoHinh[item.id] = url;
+
+            // Gán đúng mô hình đang được chọn, kể cả khi người dùng bấm
+            // trước lúc quá trình tạo GLB hoàn tất.
+            if (item.id === moHinhDangChon) {
+              viewer.src = url;
+              trangThai.textContent = '✅ Đã tải xong! Xoay 3D hoặc bấm AR';
+              setTimeout(() => {
+                trangThai.style.opacity = '0';
+              }, 3000);
+            }
+          }, function(error) {
+            console.error('Lỗi xuất mô hình ' + item.id + ':', error);
+          }, { binary: true });
+        } catch (e) {
+          console.error('Lỗi khi xử lý ' + item.id + ':', e);
+        }
+      });
+    }
+
+    // Hàm chọn mô hình
+    window.chonMoHinh = function(loai, btn) {
+      moHinhDangChon = loai;
+      document.querySelectorAll('.btn-hinh').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      
+      if (cacMoHinh[loai]) {
+        viewer.src = cacMoHinh[loai];
+        const tenHinh = btn ? btn.textContent.trim() : loai;
+        trangThai.textContent = phienWebXR
+          ? '✅ Đã đổi sang ' + tenHinh + ' • không cần quét lại'
+          : '🔍 ' + tenHinh;
+        trangThai.style.opacity = '1';
+        setTimeout(() => {
+          trangThai.style.opacity = '0';
+        }, 2000);
+      } else {
+        trangThai.textContent = '⏳ Đang tải mô hình...';
+        trangThai.style.opacity = '1';
+      }
+    };
+
+    // Kiểm tra để giải thích đúng chế độ trên từng điện thoại.
+    // WebXR cho phép giữ menu HTML ngay trong AR và đổi hình tại vị trí đã đặt.
+    async function capNhatCheDoAR() {
+      try {
+        webXRHoTro = Boolean(
+          navigator.xr &&
+          await navigator.xr.isSessionSupported('immersive-ar')
+        );
+      } catch (error) {
+        webXRHoTro = false;
+      }
+
+      if (webXRHoTro) {
+        cheDoThietBi.textContent = '✅ AR tương tác: đổi hình không cần quét lại';
+        cheDoThietBi.style.color = '#bbf7d0';
+      } else if (viewer.canActivateAR) {
+        cheDoThietBi.textContent = 'ℹ️ AR cơ bản: chọn hình trước khi mở AR';
+        cheDoThietBi.style.color = '#fde68a';
+      } else {
+        cheDoThietBi.textContent = 'ℹ️ Máy này xem 3D; AR chưa được hỗ trợ';
+        cheDoThietBi.style.color = '#fecaca';
+      }
+    }
+
+    // Theo dõi phiên AR. Nút AR dùng slot chuẩn của model-viewer nên
+    // model-viewer tự xử lý WebXR / Scene Viewer / Quick Look phù hợp.
+    viewer.addEventListener('ar-status', (event) => {
+      if (event.detail.status === 'session-started') {
+        phienWebXR = webXRHoTro;
+        trangThai.textContent = phienWebXR
+          ? '📐 Chọn hình khác ở thanh trên — vị trí AR được giữ nguyên'
+          : '📐 Đang xem AR cơ bản';
+        trangThai.style.opacity = '1';
+      } else if (event.detail.status === 'not-presenting') {
+        phienWebXR = false;
+        capNhatCheDoAR();
+      } else if (event.detail.status === 'failed') {
+        phienWebXR = false;
+        trangThai.textContent = '⚠️ Không mở được AR. Hãy dùng HTTPS và kiểm tra quyền camera.';
+        trangThai.style.opacity = '1';
+      }
+    });
+
+    viewer.addEventListener('load', capNhatCheDoAR);
+
+    // Khởi tạo
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        xuatVaGanMoHinh();
+      }, 1000);
+      capNhatCheDoAR();
+    });
+
+    // Xử lý lỗi
+    viewer.addEventListener('error', (event) => {
+      console.error('Model-viewer error:', event);
+      trangThai.textContent = '⚠️ Có lỗi xảy ra, vui lòng tải lại trang';
+      trangThai.style.opacity = '1';
+    });
+  </script>
+</body>
+</html>
