@@ -4,10 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0f172a">
-  <title>MATH-AR-V9 — Android + iPhone</title>
+  <title>MATH-AR-V11 — Android + iPhone</title>
 
   <script type="module"
-    src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.3.1/model-viewer.min.js"></script>
+    src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.3.1/model-viewer.min.js">
+  window.addEventListener('pagehide', () => {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  });
+
+</script>
 
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
@@ -50,6 +55,33 @@
       display: none !important;
     }
 
+  
+    #speak-button {
+      position: fixed;
+      z-index: 121;
+      right: 14px;
+      bottom: calc(env(safe-area-inset-bottom) + 28px);
+      min-height: 46px;
+      padding: 11px 16px;
+      border: 0;
+      border-radius: 24px;
+      background: #0ea5e9;
+      color: white;
+      font-weight: 800;
+      font-size: 13px;
+      box-shadow: 0 4px 16px rgba(14,165,233,.35);
+      cursor: pointer;
+    }
+    #speak-button:active { transform: scale(.97); }
+    @media (max-width: 600px) {
+      #speak-button {
+        right: 10px;
+        bottom: calc(env(safe-area-inset-bottom) + 22px);
+        padding: 10px 13px;
+        font-size: 12px;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -89,24 +121,112 @@
 <div id="device">Đang kiểm tra AR…</div>
 <div id="help">Android: mở bằng Chrome, hướng camera xuống mặt bàn/sàn có họa tiết và đủ sáng, di chuyển điện thoại chậm sang trái–phải khoảng 2–3 giây rồi chạm để đặt mô hình. iPhone: dùng Safari.</div>
 
+
+<button id="speak-button" type="button">🔊 Nghe mô tả</button>
+
 <script>
   const viewer = document.getElementById('viewer');
   const statusEl = document.getElementById('status');
   const deviceEl = document.getElementById('device');
 
   const models = {
-    tudien: './models/tudien.glb?v=9',
-    choptugiac: './models/choptugiac.glb?v=9',
-    langtru: './models/langtru.glb?v=9',
-    tru: './models/tru.glb?v=9',
-    matcau: './models/matcau.glb?v=9',
-    lapphuong: './models/lapphuong.glb?v=9',
-    hopchunhat: './models/hopchunhat.glb?v=9',
-    non: './models/non.glb?v=9',
-    batdien: './models/batdien.glb?v=9',
-    muoihimat: './models/muoihimat.glb?v=9',
-    haimuoimat: './models/haimuoimat.glb?v=9'
+    tudien: './models/tudien.glb?v=11',
+    choptugiac: './models/choptugiac.glb?v=11',
+    langtru: './models/langtru.glb?v=11',
+    tru: './models/tru.glb?v=11',
+    matcau: './models/matcau.glb?v=11',
+    lapphuong: './models/lapphuong.glb?v=11',
+    hopchunhat: './models/hopchunhat.glb?v=11',
+    non: './models/non.glb?v=11',
+    batdien: './models/batdien.glb?v=11',
+    muoihimat: './models/muoihimat.glb?v=11',
+    haimuoimat: './models/haimuoimat.glb?v=11'
   };
+
+  const thongTinHinh = {
+    tudien: {
+      ten: 'Tứ diện đều',
+      noi: 'Tứ diện đều có 4 mặt là các tam giác đều, có 6 cạnh bằng nhau và 4 đỉnh.'
+    },
+    choptugiac: {
+      ten: 'Hình chóp tứ giác',
+      noi: 'Hình chóp tứ giác có 1 mặt đáy là một tứ giác và 4 mặt bên là các tam giác; có tất cả 5 mặt, 8 cạnh và 5 đỉnh.'
+    },
+    langtru: {
+      ten: 'Lăng trụ tam giác',
+      noi: 'Lăng trụ tam giác có 2 mặt đáy là hai tam giác bằng nhau nằm trong hai mặt phẳng song song và 3 mặt bên; có tất cả 5 mặt, 9 cạnh và 6 đỉnh.'
+    },
+    tru: {
+      ten: 'Hình trụ',
+      noi: 'Hình trụ có 2 mặt đáy là hai hình tròn bằng nhau nằm trong hai mặt phẳng song song và 1 mặt xung quanh. Hình trụ không có đỉnh và không có cạnh theo nghĩa cạnh của khối đa diện.'
+    },
+    matcau: {
+      ten: 'Mặt cầu',
+      noi: 'Mặt cầu tâm O bán kính R là tập hợp các điểm trong không gian cách điểm O một khoảng bằng R. Mặt cầu không có cạnh và không có đỉnh.'
+    },
+    lapphuong: {
+      ten: 'Hình lập phương',
+      noi: 'Hình lập phương có 6 mặt là các hình vuông bằng nhau, 12 cạnh bằng nhau và 8 đỉnh.'
+    },
+    hopchunhat: {
+      ten: 'Hình hộp chữ nhật',
+      noi: 'Hình hộp chữ nhật có 6 mặt là các hình chữ nhật, 12 cạnh và 8 đỉnh; các mặt đối diện bằng nhau và song song.'
+    },
+    non: {
+      ten: 'Hình nón',
+      noi: 'Hình nón có 1 mặt đáy là hình tròn, 1 mặt xung quanh và 1 đỉnh. Hình nón không có cạnh theo nghĩa cạnh của khối đa diện.'
+    },
+    batdien: {
+      ten: 'Bát diện đều',
+      noi: 'Bát diện đều có 8 mặt là các tam giác đều, 12 cạnh bằng nhau và 6 đỉnh.'
+    },
+    muoihimat: {
+      ten: 'Khối mười hai mặt đều',
+      noi: 'Khối mười hai mặt đều có 12 mặt là các ngũ giác đều, 30 cạnh và 20 đỉnh.'
+    },
+    haimuoimat: {
+      ten: 'Khối hai mươi mặt đều',
+      noi: 'Khối hai mươi mặt đều có 20 mặt là các tam giác đều, 30 cạnh và 12 đỉnh.'
+    }
+  };
+
+  let moHinhHienTai = 'tudien';
+
+  function docTiengViet(text) {
+    if (!('speechSynthesis' in window)) return;
+
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'vi-VN';
+    utter.rate = 0.92;
+    utter.pitch = 1.0;
+    utter.volume = 1.0;
+
+    // Ưu tiên giọng Việt nếu trình duyệt cung cấp.
+    const voices = window.speechSynthesis.getVoices();
+    const viVoice = voices.find(v =>
+      (v.lang || '').toLowerCase().startsWith('vi')
+    );
+    if (viVoice) utter.voice = viVoice;
+
+    window.speechSynthesis.speak(utter);
+  }
+
+  function docMoTaHinh(id) {
+    const item = thongTinHinh[id];
+    if (item) docTiengViet(item.noi);
+  }
+
+  document.getElementById('speak-button').addEventListener('click', () => {
+    docMoTaHinh(moHinhHienTai);
+  });
+
+  // Nạp danh sách giọng sớm trên Chrome Android.
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+  }
+
 
   function absoluteModelUrl(path) {
     return new URL(path, window.location.href).href;
@@ -115,6 +235,9 @@
   function selectModel(id, btn) {
     document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
+
+    moHinhHienTai = id;
+    docMoTaHinh(id);
 
     // QUAN TRỌNG: gán URL HTTPS thật, không dùng blob:
     viewer.src = absoluteModelUrl(models[id]);
