@@ -57,9 +57,9 @@
   shadow-intensity="1"
   exposure="1.15"
   ar
-  ar-modes="webxr scene-viewer quick-look"
+  ar-modes="scene-viewer webxr quick-look"
   ar-placement="floor"
-  ar-scale="auto"
+  ar-scale="fixed"
   xr-environment>
 
   <button slot="ar-button" id="ar-button">📷 XEM TRONG KHÔNG GIAN THỰC (AR)</button>
@@ -81,7 +81,7 @@
 
 <div id="status">Đang tải mô hình…</div>
 <div id="device">Đang kiểm tra AR…</div>
-<div id="help">Android: nên mở bằng Chrome. iPhone: Safari. Bấm nút vàng để đặt mô hình vào không gian thật.</div>
+<div id="help">Android: mở bằng Chrome, hướng camera xuống mặt bàn/sàn có họa tiết và đủ sáng, di chuyển điện thoại chậm sang trái–phải khoảng 2–3 giây rồi chạm để đặt mô hình. iPhone: dùng Safari.</div>
 
 <script>
   const viewer = document.getElementById('viewer');
@@ -142,7 +142,25 @@
     }
   });
 
-  async function detectAR() {
+  
+  function optimizeARModeForDevice() {
+    const ua = navigator.userAgent || '';
+    const android = /Android/i.test(ua);
+    const ios = /iPhone|iPad|iPod/i.test(ua);
+
+    // Android: ưu tiên Scene Viewer vì nhận mặt phẳng thường ổn định hơn.
+    if (android) {
+      viewer.setAttribute('ar-modes', 'scene-viewer webxr quick-look');
+      viewer.setAttribute('ar-scale', 'fixed');
+      viewer.setAttribute('ar-placement', 'floor');
+    } else if (ios) {
+      viewer.setAttribute('ar-modes', 'quick-look webxr scene-viewer');
+      viewer.setAttribute('ar-scale', 'fixed');
+      viewer.setAttribute('ar-placement', 'floor');
+    }
+  }
+
+async function detectAR() {
     let webxr = false;
     try {
       webxr = !!(navigator.xr && await navigator.xr.isSessionSupported('immersive-ar'));
@@ -156,7 +174,7 @@
       deviceEl.textContent = '✅ WebXR AR hỗ trợ';
       deviceEl.style.color = '#bbf7d0';
     } else if (android) {
-      deviceEl.textContent = 'Android: dùng Chrome + Google Play Services for AR';
+      deviceEl.textContent = 'Android: ưu tiên Scene Viewer • quét mặt bàn/sàn có chi tiết, đủ sáng';
       deviceEl.style.color = '#fde68a';
     } else if (ios) {
       deviceEl.textContent = 'iPhone/iPad: Quick Look AR';
@@ -169,6 +187,7 @@
 
   // Gán URL tuyệt đối ngay từ đầu để Android Scene Viewer có thể tải trực tiếp.
   viewer.src = absoluteModelUrl(models.tudien);
+  optimizeARModeForDevice();
   detectAR();
 </script>
 </body>
